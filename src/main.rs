@@ -38,7 +38,11 @@ fn main() -> Result<()> {
 /// Splits a literal into separate lines of owned Strings.
 /// Throws away lines that are totally empty.
 pub fn string_to_lines(input: &str) -> Vec<String> {
-    input.split_terminator('\n').map(String::from).collect()
+    input
+        .trim()
+        .split_terminator('\n')
+        .map(String::from)
+        .collect()
 }
 
 /// Wraps [read_to_string] and [string_to_lines] to read a file into lines.
