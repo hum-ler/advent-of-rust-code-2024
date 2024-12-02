@@ -16,3 +16,4 @@ where `RUN_CODE` can be:
 | Day | Example 1 | Part 1 | Example 2 | Part 2 |
 | :- | :- | :- | :- | :- |
 | 1 | 11 | 2580760 | 31 | 25358365 |
+| 2 | 2 | 332 | 4 | 398 |
