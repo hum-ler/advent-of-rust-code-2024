@@ -32,7 +32,7 @@ pub fn run_part_2() -> Result<u32> {
 }
 
 fn part_1(lines: Vec<String>) -> Result<u32> {
-    let (mut left, mut right) = parse_lines_into_lists(lines);
+    let (mut left, mut right) = parse_lines_into_lists(&lines);
 
     left.sort();
     right.sort();
@@ -45,7 +45,7 @@ fn part_1(lines: Vec<String>) -> Result<u32> {
 }
 
 fn part_2(lines: Vec<String>) -> Result<u32> {
-    let (left, right) = parse_lines_into_lists(lines);
+    let (left, right) = parse_lines_into_lists(&lines);
 
     let mut cache: HashMap<u32, u32> = HashMap::new();
 
@@ -64,7 +64,7 @@ fn part_2(lines: Vec<String>) -> Result<u32> {
 }
 
 /// Converts the input lines into left and right lists of u32s.
-fn parse_lines_into_lists(lines: Vec<String>) -> (Vec<u32>, Vec<u32>) {
+fn parse_lines_into_lists(lines: &[String]) -> (Vec<u32>, Vec<u32>) {
     lines
         .iter()
         .flat_map(|s| s.split_whitespace())
