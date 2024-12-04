@@ -6,6 +6,7 @@ use clap::{Parser, ValueEnum};
 mod day_1;
 mod day_2;
 mod day_3;
+mod day_4;
 
 #[derive(Parser)]
 struct Args {
@@ -39,6 +40,10 @@ fn main() -> Result<()> {
         (3, RunCode::E2) => println!("{:?}", day_3::run_example_2()),
         (3, RunCode::P1) => println!("{:?}", day_3::run_part_1()),
         (3, RunCode::P2) => println!("{:?}", day_3::run_part_2()),
+        (4, RunCode::E1) => println!("{:?}", day_4::run_example_1()),
+        (4, RunCode::E2) => println!("{:?}", day_4::run_example_2()),
+        (4, RunCode::P1) => println!("{:?}", day_4::run_part_1()),
+        (4, RunCode::P2) => println!("{:?}", day_4::run_part_2()),
         _ => return Err(anyhow!("Invalid DAY_NUMBER or RUN_CODE")),
     }
 
