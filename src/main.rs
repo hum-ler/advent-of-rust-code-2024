@@ -7,6 +7,7 @@ mod day_1;
 mod day_2;
 mod day_3;
 mod day_4;
+mod day_5;
 
 #[derive(Parser)]
 struct Args {
@@ -44,14 +45,17 @@ fn main() -> Result<()> {
         (4, RunCode::E2) => println!("{:?}", day_4::run_example_2()),
         (4, RunCode::P1) => println!("{:?}", day_4::run_part_1()),
         (4, RunCode::P2) => println!("{:?}", day_4::run_part_2()),
+        (5, RunCode::E1) => println!("{:?}", day_5::run_example_1()),
+        (5, RunCode::E2) => println!("{:?}", day_5::run_example_2()),
+        (5, RunCode::P1) => println!("{:?}", day_5::run_part_1()),
+        (5, RunCode::P2) => println!("{:?}", day_5::run_part_2()),
         _ => return Err(anyhow!("Invalid DAY_NUMBER or RUN_CODE")),
     }
 
     Ok(())
 }
 
-/// Splits a literal into separate lines of owned Strings.
-/// Throws away lines that are totally empty.
+/// Trims and splits a literal into separate lines of owned Strings.
 pub fn string_to_lines(input: &str) -> Vec<String> {
     input
         .trim()
