@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use crate::{file_to_lines, string_to_lines};
 
@@ -32,7 +32,7 @@ pub fn run_part_2() -> Result<u32> {
 }
 
 fn part_1(lines: &[String]) -> Result<u32> {
-    let (mut left, mut right) = parse_lines_into_lists(lines);
+    let (mut left, mut right) = parse_lines_into_lists(lines)?;
 
     left.sort();
     right.sort();
@@ -41,36 +41,39 @@ fn part_1(lines: &[String]) -> Result<u32> {
         .iter()
         .zip(right.iter())
         .map(|pair| pair.0.abs_diff(*pair.1))
-        .sum::<u32>())
+        .sum())
 }
 
 fn part_2(lines: &[String]) -> Result<u32> {
-    let (left, right) = parse_lines_into_lists(lines);
+    let (left, right) = parse_lines_into_lists(lines)?;
 
     let mut cache: HashMap<u32, u32> = HashMap::new();
 
-    Ok(left
-        .iter()
+    left.iter()
         .map(|v| {
             if !cache.contains_key(v) {
-                let count = right.iter().filter(|u| *u == v).count() as u32; // FIXME: may fail to cast
+                let count = right.iter().filter(|u| *u == v).count().try_into();
 
-                cache.insert(*v, count);
+                if let Ok(count) = count {
+                    cache.insert(*v, count);
+                } else {
+                    return count.map_err(|e| anyhow!("Cannot cast from usize to u32: {}", e));
+                }
             }
 
-            v * cache[v]
+            Ok(v * cache[v])
         })
-        .sum::<u32>())
+        .sum()
 }
 
 /// Converts the input lines into left and right lists of u32s.
-fn parse_lines_into_lists(lines: &[String]) -> (Vec<u32>, Vec<u32>) {
-    lines
+fn parse_lines_into_lists(lines: &[String]) -> Result<(Vec<u32>, Vec<u32>)> {
+    Ok(lines
         .iter()
         .flat_map(|s| s.split_whitespace())
-        .filter_map(|v| v.parse::<u32>().ok()) // FIXME: skips over errors
-        .collect::<Vec<u32>>()
+        .map(|v| v.parse::<u32>())
+        .collect::<Result<Vec<_>, _>>()?
         .chunks(2)
         .map(|pair| (pair[0], pair[1]))
-        .unzip()
+        .unzip())
 }

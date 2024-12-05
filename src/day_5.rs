@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs::read_to_string};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 const EXAMPLE_INPUT: &str = r"
 47|53
@@ -52,29 +52,29 @@ pub fn run_part_2() -> Result<u32> {
 }
 
 fn part_1(input: &str) -> Result<u32> {
-    let (updates, rules) = parse_input(input);
+    let (updates, rules) = parse_input(input)?;
 
-    Ok(updates
+    updates
         .iter()
         .filter(|u| in_right_order(u, &rules))
         .map(|u| middle_page_number_by_update_len(u))
-        .sum())
+        .sum()
 }
 
 fn part_2(input: &str) -> Result<u32> {
-    let (updates, rules) = parse_input(input);
+    let (updates, rules) = parse_input(input)?;
 
-    Ok(updates
+    updates
         .iter()
         .filter(|u| !in_right_order(u, &rules))
         .map(|u| middle_page_number_by_power(u, &rules))
-        .sum())
+        .sum()
 }
 
-fn parse_input(input: &str) -> (Vec<Vec<&str>>, HashSet<&str>) {
+fn parse_input(input: &str) -> Result<(Vec<Vec<&str>>, HashSet<&str>)> {
     let input = input.trim().split("\n\n").collect::<Vec<&str>>();
     let [rules_input, updates_input, ..] = input.as_slice() else {
-        panic!("Cannot split input into rules and updates");
+        return Err(anyhow!("Cannot split input into rules and updates"));
     };
 
     let rules = HashSet::from_iter(rules_input.split("\n"));
@@ -84,7 +84,7 @@ fn parse_input(input: &str) -> (Vec<Vec<&str>>, HashSet<&str>) {
         .map(|u| u.split(",").collect())
         .collect::<Vec<_>>();
 
-    (updates, rules)
+    Ok((updates, rules))
 }
 
 fn in_right_order(update: &[&str], rules: &HashSet<&str>) -> bool {
@@ -97,31 +97,37 @@ fn in_right_order(update: &[&str], rules: &HashSet<&str>) -> bool {
     true
 }
 
-fn middle_page_number_by_update_len(update: &[&str]) -> u32 {
+fn middle_page_number_by_update_len(update: &[&str]) -> Result<u32> {
     let middle_index = update.len() / 2;
 
     if let Some(middle_str) = update.get(middle_index) {
-        return middle_str
+        middle_str
             .parse::<u32>()
-            .expect("Cannot parse middle page number");
+            .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
+    } else {
+        Err(anyhow!(
+            "Cannot retrieve middle page number from {:?}",
+            update
+        ))
     }
-
-    panic!("Cannot retrieve middle page number");
 }
 
-fn middle_page_number_by_power(update: &[&str], rules: &HashSet<&str>) -> u32 {
+fn middle_page_number_by_power(update: &[&str], rules: &HashSet<&str>) -> Result<u32> {
     let middle_power = update.len() / 2;
 
-    if let Some(middle_page) = update
+    if let Some(middle_str) = update
         .iter()
         .find(|u| get_power(u, update, rules) == middle_power)
     {
-        return middle_page
+        middle_str
             .parse::<u32>()
-            .expect("Cannot parse middle page number");
+            .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
+    } else {
+        Err(anyhow!(
+            "Cannot get element with middle power from {:?}",
+            update
+        ))
     }
-
-    panic!("Cannot get element with middle power");
 }
 
 /// Gets the "power" value of [page_number] within the group of pages inside [update].
@@ -140,8 +146,8 @@ fn middle_page_number_by_power(update: &[&str], rules: &HashSet<&str>) -> u32 {
 fn get_power(page_number: &str, update: &[&str], rules: &HashSet<&str>) -> usize {
     update
         .iter()
-        .filter(|follower| {
-            let search_term = [page_number, follower].join("|");
+        .filter(|other| {
+            let search_term = [page_number, other].join("|");
 
             rules.contains(search_term.as_str())
         })

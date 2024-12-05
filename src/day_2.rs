@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{num::ParseIntError, str::FromStr};
 
 use anyhow::Result;
 
@@ -32,14 +32,14 @@ pub fn run_part_2() -> Result<usize> {
 }
 
 fn part_1(lines: &[String]) -> Result<usize> {
-    Ok(parse_lines_into_reports(lines)
+    Ok(parse_lines_into_reports(lines)?
         .iter()
         .filter(|r| r.safe)
         .count())
 }
 
 fn part_2(lines: &[String]) -> Result<usize> {
-    Ok(parse_lines_into_dampened_reports(lines)
+    Ok(parse_lines_into_dampened_reports(lines)?
         .iter()
         .filter(|r| r.safe)
         .count())
@@ -52,13 +52,13 @@ struct Report {
 }
 
 impl FromStr for Report {
-    type Err = anyhow::Error;
+    type Err = ParseIntError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let data = s
             .split_whitespace()
-            .map(|v| v.parse().expect("Cannot parse input value"))
-            .collect::<Vec<u8>>();
+            .map(|v| v.parse::<u8>())
+            .collect::<Result<Vec<_>, _>>()?;
 
         let safe = is_safe_data(&data);
 
@@ -85,11 +85,11 @@ fn is_safe_decrease(pair: &[u8]) -> bool {
     pair[1] < pair[0] && pair[0] - pair[1] <= 3
 }
 
-fn parse_lines_into_reports(lines: &[String]) -> Vec<Report> {
+fn parse_lines_into_reports(lines: &[String]) -> Result<Vec<Report>, ParseIntError> {
     lines
         .iter()
         .map(String::as_str)
-        .filter_map(|s| Report::from_str(s).ok())
+        .map(Report::from_str)
         .collect()
 }
 
@@ -101,13 +101,13 @@ struct DampenedReport {
 }
 
 impl FromStr for DampenedReport {
-    type Err = anyhow::Error;
+    type Err = ParseIntError;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let data = s
             .split_whitespace()
-            .map(|v| v.parse().expect("Cannot parse input value"))
-            .collect::<Vec<u8>>();
+            .map(|v| v.parse::<u8>())
+            .collect::<Result<Vec<_>, _>>()?;
 
         let (safe, removed) = is_safe_data_with_dampener(&data);
 
@@ -140,10 +140,12 @@ fn is_safe_data_with_dampener(data: &[u8]) -> (bool, Option<usize>) {
     (false, None)
 }
 
-fn parse_lines_into_dampened_reports(lines: &[String]) -> Vec<DampenedReport> {
+fn parse_lines_into_dampened_reports(
+    lines: &[String],
+) -> Result<Vec<DampenedReport>, ParseIntError> {
     lines
         .iter()
         .map(String::as_str)
-        .filter_map(|s| DampenedReport::from_str(s).ok())
+        .map(DampenedReport::from_str)
         .collect()
 }
