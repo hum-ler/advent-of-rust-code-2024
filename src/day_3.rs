@@ -1,6 +1,6 @@
-use std::fs::read_to_string;
+use std::{fs::read_to_string, num::ParseIntError};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use regex::Regex;
 
 const EXAMPLE_1_INPUT: &str =
@@ -28,56 +28,54 @@ pub fn run_part_2() -> Result<u32> {
 }
 
 fn part_1(input: &str) -> Result<u32> {
-    Ok(mul(input))
+    mul(input)
 }
 
 fn part_2(input: &str) -> Result<u32> {
-    // Ok(_mul_with_do_by_stripping(input))
+    // _mul_with_do_by_stripping(input)
 
-    Ok(mul_with_do_by_scanning(input))
+    mul_with_do_by_scanning(input)
 }
 
-fn mul(input: &str) -> u32 {
-    Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")
-        .expect("Cannot create regex")
+fn mul(input: &str) -> Result<u32> {
+    Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")?
         .captures_iter(input)
         .map(|c| {
             let [left, right] = c.extract().1;
 
-            left.parse::<u32>().expect("Cannot parse captured left")
-                * right.parse::<u32>().expect("Cannot parse captured right")
+            Ok(left.parse::<u32>()? * right.parse::<u32>()?)
         })
         .sum()
 }
 
-fn mul_with_do_by_scanning(input: &str) -> u32 {
-    Regex::new(r"(?<inst>mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)|don't\(\)|do\(\))")
-        .expect("Cannot create regex")
-        .captures_iter(input)
-        .fold((0u32, true), |acc, c| match &c["inst"] {
-            "don't()" => (acc.0, false),
-            "do()" => (acc.0, true),
-            _ => {
-                if acc.1 {
-                    (
-                        acc.0
-                            + c["left"]
-                                .parse::<u32>()
-                                .expect("Cannot parse captured left")
-                                * c["right"]
-                                    .parse::<u32>()
-                                    .expect("Cannot parse captured right"),
-                        true,
-                    )
-                } else {
-                    acc
+fn mul_with_do_by_scanning(input: &str) -> Result<u32> {
+    let acc: Result<(u32, bool), ParseIntError> =
+        Regex::new(r"(?<inst>mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)|don't\(\)|do\(\))")?
+            .captures_iter(input)
+            .try_fold((0u32, true), |acc, c| match &c["inst"] {
+                "don't()" => Ok((acc.0, false)),
+                "do()" => Ok((acc.0, true)),
+                _ => {
+                    if acc.1 {
+                        let left = c["left"].parse::<u32>()?;
+                        let right = c["right"].parse::<u32>()?;
+
+                        Ok((acc.0 + left * right, true))
+                    } else {
+                        Ok(acc)
+                    }
                 }
-            }
-        })
-        .0
+            });
+
+    // Rewrap the result because T is different.
+    if let Ok(acc) = acc {
+        Ok(acc.0)
+    } else {
+        Err(anyhow!("Cannot parse input: {}", acc.unwrap_err()))
+    }
 }
 
-fn _mul_with_do_by_stripping(input: &str) -> u32 {
+fn _mul_with_do_by_stripping(input: &str) -> Result<u32> {
     mul(_strip_donts(input).as_str())
 }
 
