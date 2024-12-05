@@ -16,30 +16,30 @@ const EXAMPLE_INPUT: &str = r"
 const INPUT_FILE: &str = "inputs/day-2.txt";
 
 pub fn run_example_1() -> Result<usize> {
-    part_1(string_to_lines(EXAMPLE_INPUT))
+    part_1(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_1() -> Result<usize> {
-    part_1(file_to_lines(INPUT_FILE)?)
+    part_1(&file_to_lines(INPUT_FILE)?)
 }
 
 pub fn run_example_2() -> Result<usize> {
-    part_2(string_to_lines(EXAMPLE_INPUT))
+    part_2(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_2() -> Result<usize> {
-    part_2(file_to_lines(INPUT_FILE)?)
+    part_2(&file_to_lines(INPUT_FILE)?)
 }
 
-fn part_1(lines: Vec<String>) -> Result<usize> {
-    Ok(parse_lines_into_reports(&lines)
+fn part_1(lines: &[String]) -> Result<usize> {
+    Ok(parse_lines_into_reports(lines)
         .iter()
         .filter(|r| r.safe)
         .count())
 }
 
-fn part_2(lines: Vec<String>) -> Result<usize> {
-    Ok(parse_lines_into_dampened_reports(&lines)
+fn part_2(lines: &[String]) -> Result<usize> {
+    Ok(parse_lines_into_dampened_reports(lines)
         .iter()
         .filter(|r| r.safe)
         .count())

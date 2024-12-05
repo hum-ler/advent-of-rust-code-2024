@@ -18,26 +18,26 @@ MXMXAXMASX
 const INPUT_FILE: &str = "inputs/day-4.txt";
 
 pub fn run_example_1() -> Result<u32> {
-    part_1(string_to_lines(EXAMPLE_INPUT))
+    part_1(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_1() -> Result<u32> {
-    part_1(file_to_lines(INPUT_FILE)?)
+    part_1(&file_to_lines(INPUT_FILE)?)
 }
 
 pub fn run_example_2() -> Result<u32> {
-    part_2(string_to_lines(EXAMPLE_INPUT))
+    part_2(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_2() -> Result<u32> {
-    part_2(file_to_lines(INPUT_FILE)?)
+    part_2(&file_to_lines(INPUT_FILE)?)
 }
 
-fn part_1(lines: Vec<String>) -> Result<u32> {
+fn part_1(lines: &[String]) -> Result<u32> {
     Ok(WordSearch::from(lines).tally_part_1())
 }
 
-fn part_2(lines: Vec<String>) -> Result<u32> {
+fn part_2(lines: &[String]) -> Result<u32> {
     Ok(WordSearch::from(lines).tally_part_2())
 }
 
@@ -47,8 +47,8 @@ struct WordSearch {
     column_count: usize,
 }
 
-impl From<Vec<String>> for WordSearch {
-    fn from(value: Vec<String>) -> Self {
+impl From<&[String]> for WordSearch {
+    fn from(value: &[String]) -> Self {
         let grid = value
             .iter()
             .map(|s| s.to_owned().into_bytes())
