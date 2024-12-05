@@ -16,23 +16,23 @@ const EXAMPLE_INPUT: &str = r"
 const INPUT_FILE: &str = "inputs/day-1.txt";
 
 pub fn run_example_1() -> Result<u32> {
-    part_1(string_to_lines(EXAMPLE_INPUT))
+    part_1(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_1() -> Result<u32> {
-    part_1(file_to_lines(INPUT_FILE)?)
+    part_1(&file_to_lines(INPUT_FILE)?)
 }
 
 pub fn run_example_2() -> Result<u32> {
-    part_2(string_to_lines(EXAMPLE_INPUT))
+    part_2(&string_to_lines(EXAMPLE_INPUT))
 }
 
 pub fn run_part_2() -> Result<u32> {
-    part_2(file_to_lines(INPUT_FILE)?)
+    part_2(&file_to_lines(INPUT_FILE)?)
 }
 
-fn part_1(lines: Vec<String>) -> Result<u32> {
-    let (mut left, mut right) = parse_lines_into_lists(&lines);
+fn part_1(lines: &[String]) -> Result<u32> {
+    let (mut left, mut right) = parse_lines_into_lists(lines);
 
     left.sort();
     right.sort();
@@ -44,8 +44,8 @@ fn part_1(lines: Vec<String>) -> Result<u32> {
         .sum::<u32>())
 }
 
-fn part_2(lines: Vec<String>) -> Result<u32> {
-    let (left, right) = parse_lines_into_lists(&lines);
+fn part_2(lines: &[String]) -> Result<u32> {
+    let (left, right) = parse_lines_into_lists(lines);
 
     let mut cache: HashMap<u32, u32> = HashMap::new();
 

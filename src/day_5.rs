@@ -57,7 +57,7 @@ fn part_1(input: &str) -> Result<u32> {
     Ok(updates
         .iter()
         .filter(|u| in_right_order(u, &rules))
-        .map(middle_page_number_by_update_len)
+        .map(|u| middle_page_number_by_update_len(u))
         .sum())
 }
 
@@ -73,8 +73,9 @@ fn part_2(input: &str) -> Result<u32> {
 
 fn parse_input(input: &str) -> (Vec<Vec<&str>>, HashSet<&str>) {
     let input = input.trim().split("\n\n").collect::<Vec<&str>>();
-    let rules_input = input[0]; // FIXME
-    let updates_input = input[1]; // FIXME
+    let [rules_input, updates_input, ..] = input.as_slice() else {
+        panic!("Cannot split input into rules and updates");
+    };
 
     let rules = HashSet::from_iter(rules_input.split("\n"));
 
@@ -86,7 +87,7 @@ fn parse_input(input: &str) -> (Vec<Vec<&str>>, HashSet<&str>) {
     (updates, rules)
 }
 
-fn in_right_order(update: &Vec<&str>, rules: &HashSet<&str>) -> bool {
+fn in_right_order(update: &[&str], rules: &HashSet<&str>) -> bool {
     for i in 0..update.len() {
         if get_power(update[i], update, rules) != update.len() - i - 1 {
             return false;
@@ -96,7 +97,7 @@ fn in_right_order(update: &Vec<&str>, rules: &HashSet<&str>) -> bool {
     true
 }
 
-fn middle_page_number_by_update_len(update: &Vec<&str>) -> u32 {
+fn middle_page_number_by_update_len(update: &[&str]) -> u32 {
     let middle_index = update.len() / 2;
 
     if let Some(middle_str) = update.get(middle_index) {
@@ -108,7 +109,7 @@ fn middle_page_number_by_update_len(update: &Vec<&str>) -> u32 {
     panic!("Cannot retrieve middle page number");
 }
 
-fn middle_page_number_by_power(update: &Vec<&str>, rules: &HashSet<&str>) -> u32 {
+fn middle_page_number_by_power(update: &[&str], rules: &HashSet<&str>) -> u32 {
     let middle_power = update.len() / 2;
 
     if let Some(middle_page) = update
