@@ -46,9 +46,12 @@ fn part_1(input: &[String]) -> Result<usize> {
 }
 
 fn part_2(input: &[String]) -> Result<usize> {
+    // Make use of the result from part 1.
+    let potential_positions = list_potential_positions(input)?;
+
     let (guard, grid, grid_size) = parse_input_with_direction(input)?;
 
-    count_obstacle_positions(&guard, &grid, &grid_size)
+    count_obstacle_positions(&potential_positions, &guard, &grid, &grid_size)
 }
 
 // Direction that the guard is facing.
@@ -255,6 +258,37 @@ enum TraversalOutcome {
     Loop,
 }
 
+/// Derive the list of potential positions for the obstacle.
+///
+/// The positions are those visited by the guard before introducing the additional obstacle.
+fn list_potential_positions(input: &[String]) -> Result<Vec<Coord>> {
+    let (mut guard, mut grid, grid_size) = parse_input(input)?;
+
+    // The starting location of the guard will also be marked as Visited.
+    let Some(guard_starting_position) = guard.0 else {
+        return Err(anyhow!("Invalid guard starting position"));
+    };
+
+    while guard.0.is_some() {
+        traverse(&mut guard, &mut grid, &grid_size)?;
+    }
+
+    Ok(grid
+        .iter()
+        .filter_map(|(coord, coord_type)| {
+            if *coord == guard_starting_position {
+                return None;
+            }
+
+            if *coord_type == CoordType::Visited {
+                Some(*coord)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<Coord>>())
+}
+
 fn parse_input_with_direction(
     input: &[String],
 ) -> Result<(Guard, HashMap<Coord, CoordTypeWithDirection>, GridSize)> {
@@ -292,31 +326,26 @@ fn parse_input_with_direction(
 ///
 /// Loops through each free position, places an obstacle, and then runs the traversal simulation.
 fn count_obstacle_positions(
+    potential_positions: &[Coord],
     guard: &Guard,
     grid: &HashMap<Coord, CoordTypeWithDirection>,
     grid_size: &GridSize,
 ) -> Result<usize> {
     let mut count = 0;
 
-    for row in 0..grid_size.0 {
-        for column in 0..grid_size.1 {
-            if grid[&(row, column)] != CoordTypeWithDirection::Free {
-                continue;
-            }
+    for &(row, column) in potential_positions {
+        // Set up this iteration.
+        let mut guard = (guard.0, guard.1.clone());
+        let mut grid = grid.clone();
+        grid.insert((row, column), CoordTypeWithDirection::Obstacle);
 
-            // Set up this iteration.
-            let mut guard = (guard.0, guard.1.clone());
-            let mut grid = grid.clone();
-            grid.insert((row, column), CoordTypeWithDirection::Obstacle);
-
-            loop {
-                match traverse_with_direction(&mut guard, &mut grid, grid_size)? {
-                    TraversalOutcome::Continue => continue,
-                    TraversalOutcome::Exited => break,
-                    TraversalOutcome::Loop => {
-                        count += 1;
-                        break;
-                    }
+        loop {
+            match traverse_with_direction(&mut guard, &mut grid, grid_size)? {
+                TraversalOutcome::Continue => continue,
+                TraversalOutcome::Exited => break,
+                TraversalOutcome::Loop => {
+                    count += 1;
+                    break;
                 }
             }
         }
