@@ -120,6 +120,7 @@ impl FromStr for DampenedReport {
 }
 
 /// Checks for safe data, with allowance to remove one element.
+///
 /// Returns whether the data is safe, and the index of the element removed (if applicable).
 fn is_safe_data_with_dampener(data: &[u8]) -> (bool, Option<usize>) {
     // Check the simple case first.

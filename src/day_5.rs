@@ -71,6 +71,7 @@ fn part_2(input: &str) -> Result<u32> {
         .sum()
 }
 
+/// Converts [input] into an "updates" list and a "rules" set.
 fn parse_input(input: &str) -> Result<(Vec<Vec<&str>>, HashSet<&str>)> {
     let input = input.trim().split("\n\n").collect::<Vec<&str>>();
     let [rules_input, updates_input, ..] = input.as_slice() else {
@@ -87,6 +88,7 @@ fn parse_input(input: &str) -> Result<(Vec<Vec<&str>>, HashSet<&str>)> {
     Ok((updates, rules))
 }
 
+/// Check whether [update] is in right order i.e. each subsequent page has decreasing "power".
 fn in_right_order(update: &[&str], rules: &HashSet<&str>) -> bool {
     for i in 0..update.len() {
         if get_power(update[i], update, rules) != update.len() - i - 1 {
