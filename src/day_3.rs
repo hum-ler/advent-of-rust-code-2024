@@ -32,9 +32,9 @@ fn part_1(input: &str) -> Result<u32> {
 }
 
 fn part_2(input: &str) -> Result<u32> {
-    // _mul_with_do_by_stripping(input)
+    // _mul_with_do_by_scanning(input)
 
-    mul_with_do_by_scanning(input)
+    mul_with_do_by_stripping(input)
 }
 
 /// Sums up all the `mul()`s.
@@ -52,7 +52,7 @@ fn mul(input: &str) -> Result<u32> {
 /// Sums up all the `mul()`s, taking `do()`s and `don't()`s into account.
 ///
 /// Uses a toggle (flipped by `do()`s and `don't()`s) to determine whether `mul()`s are included.
-fn mul_with_do_by_scanning(input: &str) -> Result<u32> {
+fn _mul_with_do_by_scanning(input: &str) -> Result<u32> {
     let acc: Result<(u32, bool), ParseIntError> =
         Regex::new(r"(?<inst>mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)|don't\(\)|do\(\))")?
             .captures_iter(input)
@@ -82,11 +82,15 @@ fn mul_with_do_by_scanning(input: &str) -> Result<u32> {
 /// Sums up all the `mul()`s, taking `do()`s and `don't()`s into account.
 ///
 /// All the `don't()`s are stripped out from `input` before `mul()`s are calculated.
-fn _mul_with_do_by_stripping(input: &str) -> Result<u32> {
-    mul(_strip_donts(input).as_str())
+fn mul_with_do_by_stripping(input: &str) -> Result<u32> {
+    // mul(_strip_donts(input).as_str())
+
+    mul(strip_donts_with_regex(input)?.as_str())
 }
 
 /// Removes all `don't()`s until we hit a `do()` or the end of line.
+///
+/// Uses splitting into substrings to perform the replacement.
 fn _strip_donts(input: &str) -> String {
     let mut input = String::from(input);
 
@@ -101,4 +105,15 @@ fn _strip_donts(input: &str) -> String {
     }
 
     input
+}
+
+/// Removes all `don't()`s until we hit a `do()` or the end of line.
+///
+/// Uses regex to perform the replacement.
+fn strip_donts_with_regex(input: &str) -> Result<String> {
+    // The `s` flag allows `.` to match `\n`.
+    let input = Regex::new(r"(?s)don't\(\).*?do\(\)")?.replace_all(input, "");
+    let input = Regex::new(r"(?s)don't\(\).*")?.replace(input.as_ref(), "");
+
+    Ok(input.into_owned())
 }
