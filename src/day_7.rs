@@ -130,8 +130,7 @@ impl Equation {
             // Termination -- there are only n - 1 slots between n operands.
             if check.1.len() == self.operands.len() - 1 {
                 // Success.
-                if intermediate_value == self.test_value && check.1.len() == self.operands.len() - 1
-                {
+                if intermediate_value == self.test_value {
                     return Ok(Some(check.1));
                 }
 
