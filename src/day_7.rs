@@ -35,29 +35,27 @@ pub fn run_part_2() -> Result<u64> {
 }
 
 fn part_1(lines: &[String]) -> Result<u64> {
-    Ok(parse_lines_to_equations(lines)?
+    parse_lines_to_equations(lines)?
         .iter()
-        .filter_map(|e| {
-            if e.operators(false).is_some() {
-                Some(e.test_value)
+        .try_fold(0, |acc, e| {
+            if e.operators(false)?.is_some() {
+                Ok(acc + e.test_value)
             } else {
-                None
+                Ok(acc)
             }
         })
-        .sum())
 }
 
 fn part_2(lines: &[String]) -> Result<u64> {
-    Ok(parse_lines_to_equations(lines)?
+    parse_lines_to_equations(lines)?
         .iter()
-        .filter_map(|e| {
-            if e.operators(true).is_some() {
-                Some(e.test_value)
+        .try_fold(0, |acc, e| {
+            if e.operators(true)?.is_some() {
+                Ok(acc + e.test_value)
             } else {
-                None
+                Ok(acc)
             }
         })
-        .sum())
 }
 
 #[derive(Clone, PartialEq)]
@@ -97,11 +95,11 @@ impl FromStr for Equation {
 impl Equation {
     /// Searches for the first sequence of [Operator]s that returns the test value.
     ///
-    /// Returns None if no such sequence is found.
+    /// Returns `Ok(None)` if no such sequence is found.
     ///
     /// Set [allow_concatenate] to true to allow [Operator::Concatenate] to appear in the sequence
     /// (as in part 2). Otherwise, only [Operator::Add] and [Operator::Multiply] will be used.
-    pub fn operators(&self, allow_concatenate: bool) -> Option<Vec<Operator>> {
+    pub fn operators(&self, allow_concatenate: bool) -> Result<Option<Vec<Operator>>> {
         assert!(self.operands.len() >= 2);
 
         // Initialize the search queue.
@@ -114,26 +112,14 @@ impl Equation {
         }
 
         while !check_queue.is_empty() {
-            let Some(mut check) = check_queue.pop() else {
-                eprintln!("Cannot pop when queue is not empty");
-                return None;
-            };
+            let mut check = check_queue
+                .pop()
+                .ok_or(anyhow!("Cannot pop but queue is not empty"))?;
 
             let intermediate_value = match check.1[check.1.len() - 1] {
                 Operator::Add => check.0 + self.operands[check.1.len()],
                 Operator::Multiply => check.0 * self.operands[check.1.len()],
-                Operator::Concatenate => {
-                    let Ok(value) = concatenate(check.0, self.operands[check.1.len()]) else {
-                        eprintln!(
-                            "Cannot concatenate values: {}, {}",
-                            check.0,
-                            self.operands[check.1.len()]
-                        );
-                        return None;
-                    };
-
-                    value
-                }
+                Operator::Concatenate => concatenate(check.0, self.operands[check.1.len()])?,
             };
 
             // Failure -- intermediate_value can only get bigger.
@@ -146,7 +132,7 @@ impl Equation {
                 // Success.
                 if intermediate_value == self.test_value && check.1.len() == self.operands.len() - 1
                 {
-                    return Some(check.1);
+                    return Ok(Some(check.1));
                 }
 
                 continue;
@@ -169,7 +155,7 @@ impl Equation {
             }
         }
 
-        None
+        Ok(None)
     }
 }
 
