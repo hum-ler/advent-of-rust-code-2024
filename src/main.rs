@@ -10,6 +10,7 @@ mod day_4;
 mod day_5;
 mod day_6;
 mod day_7;
+mod day_8;
 
 #[derive(Parser)]
 struct Args {
@@ -59,6 +60,10 @@ fn main() -> Result<()> {
         (7, RunCode::E2) => println!("{:?}", day_7::run_example_2()),
         (7, RunCode::P1) => println!("{:?}", day_7::run_part_1()),
         (7, RunCode::P2) => println!("{:?}", day_7::run_part_2()),
+        (8, RunCode::E1) => println!("{:?}", day_8::run_example_1()),
+        (8, RunCode::E2) => println!("{:?}", day_8::run_example_2()),
+        (8, RunCode::P1) => println!("{:?}", day_8::run_part_1()),
+        (8, RunCode::P2) => println!("{:?}", day_8::run_part_2()),
         _ => return Err(anyhow!("Invalid DAY_NUMBER or RUN_CODE")),
     }
 
