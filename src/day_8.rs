@@ -107,6 +107,27 @@ fn parse_lines_into_sets(lines: &[String]) -> Result<(HashMap<u8, HashSet<Coord>
     Ok((hash_map, row_count, column_count))
 }
 
+/// [Improved by Gemini] Parses input into a hash of a symbol to the set of its antenna, plus the
+/// total counts of rows and columns in the grid.
+fn _gemini_parse_lines_into_sets(
+    lines: &[String],
+) -> Result<(HashMap<u8, HashSet<Coord>>, usize, usize)> {
+    let mut symbol_coords: HashMap<u8, HashSet<Coord>> = HashMap::new();
+
+    for (row, line) in lines.iter().enumerate() {
+        for (col, c) in line.bytes().enumerate() {
+            if c != b'.' {
+                symbol_coords.entry(c).or_default().insert((row, col));
+            }
+        }
+    }
+
+    let row_count = lines.len();
+    let col_count = lines.first().map_or(0, String::len); // Handle empty input
+
+    Ok((symbol_coords, row_count, col_count))
+}
+
 /// Calculates the antinodes on either side of [first] and [second].
 ///
 /// Takes into account the boundaries of the grid.
