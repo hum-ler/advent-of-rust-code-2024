@@ -63,6 +63,31 @@ fn parse_disk_map_to_disk(input: &str) -> Vec<Option<usize>> {
         .collect()
 }
 
+// [Improved by Gemini with Clippy]
+fn _gemini_parse_disk_map_to_disk(input: &str) -> Result<Vec<Option<usize>>> {
+    let mut disk_map = Vec::new();
+    let mut file_id = 0;
+
+    for (i, byte) in input.bytes().enumerate() {
+        if !byte.is_ascii_digit() {
+            return Err(anyhow!("Invalid character at position {}", i));
+        }
+
+        let size = (byte - b'0') as usize;
+
+        if i % 2 == 0 {
+            // File
+            disk_map.extend(std::iter::repeat(Some(file_id)).take(size));
+            file_id += 1;
+        } else {
+            // Free space
+            disk_map.extend(std::iter::repeat(None).take(size));
+        }
+    }
+
+    Ok(disk_map)
+}
+
 fn compact(mut disk: Vec<Option<usize>>) -> Result<Vec<Option<usize>>> {
     assert!(!disk.is_empty());
 
