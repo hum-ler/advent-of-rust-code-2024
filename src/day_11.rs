@@ -1,6 +1,8 @@
-use std::{collections::HashMap, fs::read_to_string};
+use std::{collections::HashMap, fs::read_to_string, sync::RwLock};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use itertools::Itertools;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 const EXAMPLE_INPUT: &str = "125 17";
 
@@ -34,10 +36,9 @@ fn part_1(input: &str) -> Result<usize> {
 }
 
 fn part_2(input: &str) -> Result<usize> {
-    // The counting can be done on each stone individually and then summing up.
+    // The counting can be done on each stone individually and then adding up.
     //
-    // Try brute-forcing the answer in 2 phases:
-    //
+    // Try brute-forcing the answer in 2 parts:
     // 1. The first 40 rounds can be done like part 1 within reasonable time (half a minute?).
     // 2. The remaining 35 rounds we do per-stone, caching the count for unique stone values.
 
@@ -46,35 +47,40 @@ fn part_2(input: &str) -> Result<usize> {
         .map(str::parse::<u64>)
         .collect::<Result<Vec<_>, _>>()?;
 
-    // Phase 1 (40 rounds)
+    // Run 40 rounds first.
     for _ in 0..40 {
-        stones = stones.iter().flat_map(transform).collect();
+        stones = stones.par_iter().flat_map_iter(transform).collect();
     }
 
     // After 40 rounds:
+    //
     // Number of stones: 112414503
     // Number of unique stones: 1649
 
-    // Phase 2 (35 rounds, one stone at a time)
+    // Generate the lookup.
+    let unique_stones = stones.iter().unique().copied().collect::<Vec<_>>();
+    let cache: RwLock<HashMap<u64, usize>> = RwLock::new(HashMap::new());
+    unique_stones.into_par_iter().try_for_each(|stone| {
+        let mut stones = vec![stone];
 
-    let mut count = 0usize;
-    let mut cache: HashMap<u64, usize> = HashMap::new();
+        // Run 35 rounds.
+        for _ in 0..35 {
+            stones = stones.par_iter().flat_map_iter(transform).collect();
+        }
 
-    for stone in stones {
-        cache.entry(stone).or_insert_with(|| {
-            let mut stones = vec![stone];
+        cache
+            .write()
+            .map_err(|e| anyhow!("Cannot get write lock on cache: {}", e))?
+            .insert(stone, stones.len());
 
-            for _ in 0..35 {
-                stones = stones.iter().flat_map(transform).collect();
-            }
+        Ok::<_, anyhow::Error>(())
+    })?;
 
-            stones.len()
-        });
-
-        count += cache[&stone];
-    }
-
-    Ok(count)
+    // Look up the count from the cache.
+    let cache = cache
+        .read()
+        .map_err(|e| anyhow!("Cannot get read lock on cache: {}", e))?;
+    Ok(stones.par_iter().map(|stone| cache[stone].to_owned()).sum())
 }
 
 /// Transforms a stone based on puzzle rules.
