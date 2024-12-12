@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::read_to_string, sync::RwLock};
+use std::{collections::HashMap, fs::read_to_string, sync::Mutex};
 
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
@@ -59,7 +59,7 @@ fn part_2(input: &str) -> Result<usize> {
 
     // Generate the lookup.
     let unique_stones = stones.iter().unique().copied().collect::<Vec<_>>();
-    let cache: RwLock<HashMap<u64, usize>> = RwLock::new(HashMap::new());
+    let cache: Mutex<HashMap<u64, usize>> = Mutex::new(HashMap::new());
     unique_stones.into_par_iter().try_for_each(|stone| {
         let mut stones = vec![stone];
 
@@ -69,17 +69,15 @@ fn part_2(input: &str) -> Result<usize> {
         }
 
         cache
-            .write()
-            .map_err(|e| anyhow!("Cannot get write lock on cache: {}", e))?
+            .lock()
+            .map_err(|e| anyhow!("Cannot lock cache for writing: {}", e))?
             .insert(stone, stones.len());
 
         Ok::<_, anyhow::Error>(())
     })?;
 
     // Look up the count from the cache.
-    let cache = cache
-        .read()
-        .map_err(|e| anyhow!("Cannot get read lock on cache: {}", e))?;
+    let cache = cache.into_inner()?;
     Ok(stones.par_iter().map(|stone| cache[stone].to_owned()).sum())
 }
 
