@@ -28,7 +28,7 @@ const INPUT_GRID_SIZE: Vector2 = Vector2 { x: 101, y: 103 };
 
 const TIME_ELAPSED: i32 = 100;
 
-const VERTICAL_LINE_LENGTH: i32 = 20;
+const _VERTICAL_LINE_LENGTH: i32 = 20;
 
 pub fn run_example_1() -> Result<usize> {
     part_1(&string_to_lines(EXAMPLE_INPUT), &EXAMPLE_GRID_SIZE)
@@ -62,8 +62,13 @@ fn part_2(lines: &[String], grid_size: &Vector2) -> Result<i32> {
     //
     // Based on hints from the subreddit, the damn tree is a solid arrangement.
     // We can search for a vertical or a diagonal linear arrangement of robots.
+    //
+    // Alternatively, assuming the tree falls entirely into 1 quadrant, we can
+    // use part 1 to check if one of the quadrants has way more robots that the
+    // other quadrants.
 
     let robots = parse_lines_to_robots(lines)?;
+    let half_of_robots = robots.len() / 2;
 
     let mut time = 0i32;
 
@@ -75,10 +80,20 @@ fn part_2(lines: &[String], grid_size: &Vector2) -> Result<i32> {
             .map(|r| r.traverse(time, grid_size))
             .collect::<Vec<_>>();
 
-        if find_vertical_line(&positions, VERTICAL_LINE_LENGTH) {
+        let populations = find_quadrant_populations(&positions, grid_size);
+        if populations.0 > half_of_robots
+            || populations.1 > half_of_robots
+            || populations.2 > half_of_robots
+            || populations.3 > half_of_robots
+        {
             print_grid(&positions, grid_size);
             break;
         }
+
+        // if _find_vertical_line(&positions, _VERTICAL_LINE_LENGTH) {
+        //     print_grid(&positions, grid_size);
+        //     break;
+        // }
     }
 
     Ok(time)
@@ -184,7 +199,7 @@ fn print_grid(positions: &[Vector2], grid_size: &Vector2) {
 }
 
 /// Finds a vertical line of at least [length] formed by items in [positions].
-fn find_vertical_line(positions: &[Vector2], length: i32) -> bool {
+fn _find_vertical_line(positions: &[Vector2], length: i32) -> bool {
     'outer: for pos in positions {
         for i in 0..length {
             if !positions.contains(&Vector2 {
