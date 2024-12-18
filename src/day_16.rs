@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
-use pathfinding::prelude::{dijkstra, yen};
+use pathfinding::prelude::{astar_bag_collect, dijkstra};
 
 use crate::{file_to_lines, string_to_lines};
 
@@ -25,8 +25,6 @@ const EXAMPLE_INPUT: &str = r"
 ";
 
 const INPUT_FILE: &str = "inputs/day-16.txt";
-
-const OPTIMAL_PATHS_COUNT: usize = 14;
 
 pub fn run_example_1() -> Result<u32> {
     part_1(&string_to_lines(EXAMPLE_INPUT))
@@ -57,30 +55,22 @@ fn part_1(lines: &[String]) -> Result<u32> {
 }
 
 fn part_2(lines: &[String]) -> Result<usize> {
-    // pathfinding does not seem to provide some way to get all optimal paths, just an optimal one.
-    // Using Yen we can verify that the input has 14 optimal paths. The example has less.
-
     let (maze, start, end) = parse_lines_to_maze(lines)?;
 
     let start = (start, Facing::East);
 
-    let paths = yen(
-        &start,
-        |n| successors(n, &maze),
-        |n| n.0 == end,
-        OPTIMAL_PATHS_COUNT,
-    );
+    // Note: a heuristic of 0 is essentially only just as good as Dijkstra.
+    let paths = astar_bag_collect(&start, |n| successors(n, &maze), |_| 0, |n| n.0 == end);
 
-    if let Some(&(_, lowest_cost)) = paths.first() {
-        Ok(paths
+    if let Some(paths_with_cost) = paths {
+        Ok(paths_with_cost
+            .0
             .iter()
-            .take_while(|p| p.1 == lowest_cost)
-            .flat_map(|p| p.0.to_owned())
-            .map(|n| n.0)
+            .flat_map(|p| p.iter().map(|n| n.0).collect::<Vec<_>>())
             .unique()
             .count())
     } else {
-        Err(anyhow!("Cannot find lowest cost"))
+        Err(anyhow!("Cannot find all shortest paths"))
     }
 }
 
