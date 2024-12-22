@@ -17,6 +17,7 @@ mod day_19;
 mod day_2;
 mod day_20;
 mod day_21;
+mod day_22;
 mod day_3;
 mod day_4;
 mod day_5;
@@ -129,6 +130,10 @@ fn main() -> Result<()> {
         (21, RunCode::E2) => println!("No example 2"),
         (21, RunCode::P1) => println!("{:?}", day_21::run_part_1()),
         (21, RunCode::P2) => println!("No solution"),
+        (22, RunCode::E1) => println!("{:?}", day_22::run_example_1()),
+        (22, RunCode::E2) => println!("{:?}", day_22::run_example_2()),
+        (22, RunCode::P1) => println!("{:?}", day_22::run_part_1()),
+        (22, RunCode::P2) => println!("{:?}", day_22::run_part_2()),
         _ => return Err(anyhow!("Invalid DAY_NUMBER or RUN_CODE")),
     }
 
