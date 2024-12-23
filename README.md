@@ -2,6 +2,8 @@
 
 ## Usage
 
+Save your puzzle input as `inputs/day-<DAY_NUMBER>.txt`.
+
 ```bash
 cargo run <DAY_NUMBER> <RUN_CODE>
 ```
