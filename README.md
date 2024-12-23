@@ -37,3 +37,4 @@ where `RUN_CODE` can be:
 | 20 | N.A. | 1369 | N.A. | 979012 |
 | 21 | 126384 | 157892 | N.A. | ? |
 | 22 | 37327623 | 20071921341 | 23 | 2242 |
+| 23 | 7 | 893 | co,de,ka,ta | cw,dy,ef,iw,ji,jv,ka,ob,qv,ry,ua,wt,xz |
