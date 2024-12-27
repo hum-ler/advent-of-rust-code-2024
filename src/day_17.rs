@@ -1,4 +1,4 @@
-use std::{fs::read_to_string, str::FromStr};
+use std::{collections::VecDeque, fs::read_to_string, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use regex::Regex;
@@ -30,10 +30,10 @@ pub fn run_part_1() -> Result<String> {
 }
 
 pub fn run_example_2() -> Result<u64> {
-    part_2(EXAMPLE_2_INPUT.trim())
+    example_2(EXAMPLE_2_INPUT.trim())
 }
 
-pub fn _run_part_2() -> Result<u64> {
+pub fn run_part_2() -> Result<u64> {
     part_2(read_to_string(INPUT_FILE)?.trim())
 }
 
@@ -43,9 +43,7 @@ fn part_1(input: &str) -> Result<String> {
     run(&mut computer)
 }
 
-fn part_2(input: &str) -> Result<u64> {
-    // Brute-force solution does not work.
-
+fn example_2(input: &str) -> Result<u64> {
     let computer = Computer::from_str(input)?;
 
     let mut a = 0;
@@ -64,7 +62,72 @@ fn part_2(input: &str) -> Result<u64> {
     }
 }
 
-#[derive(Debug, Clone)]
+fn part_2(input: &str) -> Result<u64> {
+    // Brute-force solution does not work.
+    //
+    // Program is 2,4,1,3,7,5,0,3,1,5,4,4,5,5,3,0.
+    //
+    // [1] 2,4 => B = A % 8 i.e. B is 0..8
+    // [2] 1,3 => B = B ^ 3 i.e. B is 3, 2, 1, 0, 7, 6, 5, 4
+    // [3] 7,5 => C = A >> B
+    // [4] 0,3 => A = A >> 3
+    // [5] 1,5 => B = B ^ 5 i.e. B is 6, 7, 4, 5, 2, 3, 0, 1
+    // [6] 4,4 => B = B ^ C
+    // [7] 5,5 => prints B % 8
+    // [8] 3,0 => jumps back to start if A != 0 (the termination condition).
+    //
+    // Note that [1] and [3] sets the values of B and C i.e. there is no retention from the previous
+    // cycle other than the value for A.
+    //
+    // A gets shifted by 3 every cycle.
+    //
+    // To terminate with last print == 0, A must be 0..8 at start of the cycle. In fact we can plug
+    // in the values and find that A can only be 6.
+
+    // Create a queue to check all number iteractively rather than recursively.
+    let mut output_queue: VecDeque<u64> = VecDeque::new();
+    output_queue.push_back(6);
+
+    Computer::from_str(input)?
+        .program
+        .into_iter()
+        .rev()
+        .skip(1) // we seeded 6 into the queue
+        .for_each(|program_value| {
+            // Clone the input, and then clear output_queue for this iteraction.
+            let mut input_queue = output_queue.clone();
+            output_queue = VecDeque::default();
+
+            while let Some(input) = input_queue.pop_front() {
+                // Check all 8 possibilities.
+                for i in 0..8u64 {
+                    let possible_a = (input << 3) + i;
+
+                    let a = possible_a;
+                    let mut b = a % 8;
+                    b ^= 3;
+                    let c = a >> b;
+
+                    // No need to evaluate [4], incorporated into to_check.
+                    // a >>= 3;
+
+                    b ^= 5;
+                    b ^= c;
+
+                    if b % 8 == program_value {
+                        output_queue.push_back(possible_a);
+                    }
+                }
+            }
+        });
+
+    output_queue
+        .front() // smallest number is pushed first
+        .copied()
+        .ok_or(anyhow!("Cannot find a solution"))
+}
+
+#[derive(Clone)]
 struct Computer {
     a: u64,
     b: u64,
