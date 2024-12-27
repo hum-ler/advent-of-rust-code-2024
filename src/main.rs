@@ -144,7 +144,7 @@ fn main() -> Result<()> {
         (24, RunCode::E1) => println!("{:?}", day_24::run_example_1()),
         (24, RunCode::E2) => println!("No example 2"),
         (24, RunCode::P1) => println!("{:?}", day_24::run_part_1()),
-        (24, RunCode::P2) => println!("No solution"),
+        (24, RunCode::P2) => println!("{:?}", day_24::run_part_2()),
         (25, RunCode::E1) => println!("{:?}", day_25::run_example_1()),
         (25, RunCode::E2) => println!("No example 2"),
         (25, RunCode::P1) => println!("{:?}", day_25::run_part_1()),
