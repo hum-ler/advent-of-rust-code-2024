@@ -1,40 +1,17 @@
-use std::fs::read_to_string;
-
 use anyhow::{anyhow, Result};
 use rand::{seq::SliceRandom, thread_rng};
 
-const EXAMPLE_INPUT: &str = r"
-r, wr, b, g, bwu, rb, gb, br
+const INPUT_FILE: &str = "inputs/day-19.txt";
 
-brwrr
-bggr
-gbbr
-rrbgbr
-ubwu
-bwurrg
-brgr
-bbrgwb
-";
-
-const _INPUT_FILE: &str = "inputs/day-19.txt";
-
-pub fn run_example_1() -> Result<usize> {
-    example_1(EXAMPLE_INPUT.trim())
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn _run_part_1() -> Result<usize> {
-    _part_1(read_to_string(_INPUT_FILE)?.trim())
-}
-
-pub fn _run_example_2() -> Result<usize> {
-    _part_2(EXAMPLE_INPUT.trim())
-}
-
-pub fn _run_part_2() -> Result<usize> {
-    _part_2(read_to_string(_INPUT_FILE)?.trim())
-}
-
-fn example_1(input: &str) -> Result<usize> {
+fn _part_1_example(input: String) -> Result<usize> {
     // Is this a variant of coin change?
 
     // 1. Take the towels list and reduce it to unique patterns.
@@ -43,7 +20,7 @@ fn example_1(input: &str) -> Result<usize> {
     // 3. Do the same for 'w' with "wr".
     // 4. The rest of the designs are possible since 'r', 'b', 'g' are single-color.
 
-    let (_, designs) = parse_input(input)?;
+    let (_, designs) = parse_input(&input)?;
 
     let mut possible_designs = 0usize;
 
@@ -66,7 +43,7 @@ fn example_1(input: &str) -> Result<usize> {
     Ok(possible_designs)
 }
 
-fn _part_1(input: &str) -> Result<usize> {
+fn part_1(input: String) -> Result<usize> {
     // Is this a variant of coin change?
 
     // 1. Take the towels list and reduce it to unique patterns that includes 'u' ('r', 'g', 'w',
@@ -74,9 +51,9 @@ fn _part_1(input: &str) -> Result<usize> {
     // 2. For each design, find elements from 1. to substitute the 'u's (the hard part).
     // 3. The rest of the designs are possible since we have 'r', 'g', 'w', 'b'.
 
-    let (patterns, designs) = parse_input(input)?;
+    let (patterns, designs) = parse_input(&input)?;
 
-    let mut patterns = _reduce_input_patterns(&patterns);
+    let mut patterns = reduce_input_patterns(&patterns);
     patterns.sort_by_key(|p| p.len());
 
     let mut possible_designs = 0usize;
@@ -117,7 +94,7 @@ fn _part_1(input: &str) -> Result<usize> {
     Ok(possible_designs)
 }
 
-fn _part_2(_input: &str) -> Result<usize> {
+fn part_2(_input: String) -> Result<usize> {
     todo!()
 }
 
@@ -134,7 +111,7 @@ fn parse_input(input: &str) -> Result<(Vec<&str>, Vec<&str>)> {
 }
 
 /// Reduce patterns to the minimal set whose elements cannot be broken down into smaller components.
-fn _reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
+fn reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
     let mut patterns = patterns
         .iter()
         .filter(|p| p.contains("u"))
@@ -179,4 +156,36 @@ fn _reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
     unique_sequences.extend_from_slice(&["uuuu"]);
 
     unique_sequences
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+r, wr, b, g, bwu, rb, gb, br
+
+brwrr
+bggr
+gbbr
+rrbgbr
+ubwu
+bwurrg
+brgr
+bbrgwb
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(_part_1_example(EXAMPLE_INPUT.trim().to_string())?, 6);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 16);
+
+        Ok(())
+    }
 }

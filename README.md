@@ -2,16 +2,17 @@
 
 ## Usage
 
-Save your puzzle input as `inputs/day-<DAY_NUMBER>.txt`.
-
+To run the program against puzzle input:
 ```bash
-cargo run <DAY_NUMBER> <RUN_CODE>
+cargo run --bin day_<DAY_NUMBER> <PART_NUMBER> [--input <INPUT_FILE_PATH>]
 ```
-where `RUN_CODE` can be:
-- `e1` -- runs example 1
-- `e2` -- runs example 2
-- `p1` -- runs part 1
-- `p2` -- runs part 2
+
+If you save your puzzle input as `inputs/day-<DAY_NUMBER>.txt`, you may omit the input argument.
+
+To run the program against puzzle examples:
+```bash
+cargo test --bin day_<DAY_NUMBER> [<PART_NUMBER>]
+```
 
 ## Answers
 

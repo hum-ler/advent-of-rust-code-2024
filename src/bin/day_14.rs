@@ -1,28 +1,9 @@
 use std::str::FromStr;
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, Result};
 use regex::Regex;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-p=0,4 v=3,-3
-p=6,3 v=-1,-3
-p=10,3 v=-1,2
-p=2,0 v=2,-1
-p=0,0 v=1,3
-p=3,0 v=-2,-2
-p=7,6 v=-1,-3
-p=3,0 v=-1,-2
-p=9,3 v=2,3
-p=7,3 v=-1,2
-p=2,4 v=2,-3
-p=9,5 v=-3,-3
-";
-
 const INPUT_FILE: &str = "inputs/day-14.txt";
-
-const EXAMPLE_GRID_SIZE: Vector2 = Vector2 { x: 11, y: 7 };
 
 const INPUT_GRID_SIZE: Vector2 = Vector2 { x: 101, y: 103 };
 
@@ -30,20 +11,24 @@ const TIME_ELAPSED: i32 = 100;
 
 const _VERTICAL_LINE_LENGTH: i32 = 20;
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT), &EXAMPLE_GRID_SIZE)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?, &INPUT_GRID_SIZE)
+fn part_1(input: String) -> Result<usize> {
+    part_1_with_grid_size(input, &INPUT_GRID_SIZE)
 }
 
-pub fn run_part_2() -> Result<i32> {
-    part_2(&file_to_lines(INPUT_FILE)?, &INPUT_GRID_SIZE)
+fn part_2(input: String) -> Result<i32> {
+    part_2_with_grid_size(input, &INPUT_GRID_SIZE)
 }
 
-fn part_1(lines: &[String], grid_size: &Vector2) -> Result<usize> {
-    let robots = parse_lines_to_robots(lines)?;
+fn part_1_with_grid_size(input: String, grid_size: &Vector2) -> Result<usize> {
+    let robots = parse_input_to_robots(input)?;
 
     let final_positions = robots
         .iter()
@@ -55,7 +40,7 @@ fn part_1(lines: &[String], grid_size: &Vector2) -> Result<usize> {
     Ok(populations.0 * populations.1 * populations.2 * populations.3)
 }
 
-fn part_2(lines: &[String], grid_size: &Vector2) -> Result<i32> {
+fn part_2_with_grid_size(input: String, grid_size: &Vector2) -> Result<i32> {
     // This is a stupid puzzle. What is the shape of the tree? Where is it
     // positioned? Is it solid or hollow? How big is it? Must each and every
     // robot form part of tree?
@@ -67,7 +52,7 @@ fn part_2(lines: &[String], grid_size: &Vector2) -> Result<i32> {
     // use part 1 to check if one of the quadrants has way more robots that the
     // other quadrants.
 
-    let robots = parse_lines_to_robots(lines)?;
+    let robots = parse_input_to_robots(input)?;
     let half_of_robots = robots.len() / 2;
 
     let mut time = 0i32;
@@ -149,12 +134,8 @@ impl Robot {
     }
 }
 
-fn parse_lines_to_robots(lines: &[String]) -> Result<Vec<Robot>> {
-    lines
-        .iter()
-        .map(String::as_str)
-        .map(Robot::from_str)
-        .collect()
+fn parse_input_to_robots(input: String) -> Result<Vec<Robot>> {
+    input.split_terminator("\n").map(Robot::from_str).collect()
 }
 
 fn find_quadrant_populations(
@@ -217,4 +198,36 @@ fn _find_vertical_line(positions: &[Vector2], length: i32) -> bool {
 
     // Exhausted all pos.
     false
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+p=0,4 v=3,-3
+p=6,3 v=-1,-3
+p=10,3 v=-1,2
+p=2,0 v=2,-1
+p=0,0 v=1,3
+p=3,0 v=-2,-2
+p=7,6 v=-1,-3
+p=3,0 v=-1,-2
+p=9,3 v=2,3
+p=7,3 v=-1,2
+p=2,4 v=2,-3
+p=9,5 v=-3,-3
+";
+
+    const EXAMPLE_GRID_SIZE: Vector2 = Vector2 { x: 11, y: 7 };
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(
+            part_1_with_grid_size(EXAMPLE_INPUT.trim().to_string(), &EXAMPLE_GRID_SIZE)?,
+            12
+        );
+
+        Ok(())
+    }
 }

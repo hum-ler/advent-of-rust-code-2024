@@ -2,49 +2,26 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-RRRRIICCFF
-RRRRIICCCF
-VVRRRCCFFF
-VVRCCCJFFF
-VVVVCJJCFE
-VVIVCCJJEE
-VVIIICJJEE
-MIIIIIJJEE
-MIIISIJEEE
-MMMISSJEEE
-";
-
 const INPUT_FILE: &str = "inputs/day-12.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
-    let grid = parse_lines_to_grid(lines);
+fn part_1(input: String) -> Result<usize> {
+    let grid = parse_input_to_grid(input);
 
     let regions = find_regions(&grid);
 
     Ok(regions.iter().map(|r| r.area() * r.perimeter()).sum())
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    let grid = parse_lines_to_grid(lines);
+fn part_2(input: String) -> Result<usize> {
+    let grid = parse_input_to_grid(input);
 
     let regions = find_regions(&grid);
 
@@ -267,8 +244,11 @@ impl Region {
     }
 }
 
-fn parse_lines_to_grid(lines: &[String]) -> Vec<Vec<u8>> {
-    lines.iter().map(|s| s.as_bytes().to_owned()).collect()
+fn parse_input_to_grid(input: String) -> Vec<Vec<u8>> {
+    input
+        .split_terminator("\n")
+        .map(|s| s.as_bytes().to_owned())
+        .collect()
 }
 
 fn find_regions(grid: &[Vec<u8>]) -> Vec<Region> {
@@ -335,4 +315,36 @@ fn flood_fill(
     }
 
     coords
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+RRRRIICCFF
+RRRRIICCCF
+VVRRRCCFFF
+VVRCCCJFFF
+VVVVCJJCFE
+VVIVCCJJEE
+VVIIICJJEE
+MIIIIIJJEE
+MIIISIJEEE
+MMMISSJEEE
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 1930);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 1206);
+
+        Ok(())
+    }
 }

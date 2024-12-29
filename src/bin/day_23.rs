@@ -4,68 +4,20 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use regex::Regex;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-kh-tc
-qp-kh
-de-cg
-ka-co
-yn-aq
-qp-ub
-cg-tb
-vc-aq
-tb-ka
-wh-tc
-yn-cg
-kh-ub
-ta-co
-de-co
-tc-td
-tb-wq
-wh-td
-ta-ka
-td-qp
-aq-cg
-wq-ub
-ub-vc
-de-ta
-wq-aq
-wq-vc
-wh-yn
-ka-de
-kh-ta
-co-tc
-wh-qp
-tb-vc
-td-yn
-";
-
 const INPUT_FILE: &str = "inputs/day-23.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<String> {
-    // We know the password is 4 computers long, so ignore anything shorter than that.
-    part_2(&string_to_lines(EXAMPLE_INPUT), 3)
-}
-
-pub fn run_part_2() -> Result<String> {
-    // Each computer is connected to 13 others. Work downwards until we find the largest complete
-    // graph.
-    part_2(&file_to_lines(INPUT_FILE)?, 12)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
+fn part_1(input: String) -> Result<usize> {
     let mut t_triplets: HashSet<[String; 3]> = HashSet::new();
 
-    let connections = parse_lines_to_connections(lines)?;
+    let connections = parse_input_to_connections(input)?;
 
     let t_computers = connections
         .keys()
@@ -84,10 +36,16 @@ fn part_1(lines: &[String]) -> Result<usize> {
     Ok(t_triplets.len())
 }
 
-fn part_2(lines: &[String], prune: usize) -> Result<String> {
+fn part_2(input: String) -> Result<String> {
+    // Each computer is connected to 13 others. Work downwards until we find the largest complete
+    // graph.
+    part_2_with_prune(input, 12)
+}
+
+fn part_2_with_prune(input: String, prune: usize) -> Result<String> {
     // We are looking for the largest complete subgraph.
 
-    let connections = parse_lines_to_connections(lines)?;
+    let connections = parse_input_to_connections(input)?;
 
     let mut largest_complete_graph = connections.keys().fold(Vec::default(), |acc, computer| {
         let mut graph = find_largest_complete_graph(&connections[computer], &connections, prune);
@@ -104,12 +62,12 @@ fn part_2(lines: &[String], prune: usize) -> Result<String> {
     Ok(largest_complete_graph.join(","))
 }
 
-fn parse_lines_to_connections(lines: &[String]) -> Result<HashMap<String, Vec<String>>> {
+fn parse_input_to_connections(input: String) -> Result<HashMap<String, Vec<String>>> {
     let re = Regex::new(r"^(?<first>\w\w)-(?<second>\w\w)$")?;
 
     let mut connections = HashMap::new();
 
-    lines.iter().try_for_each(|line| {
+    input.split_terminator("\n").try_for_each(|line| {
         let captures = re
             .captures(line)
             .ok_or(anyhow!("Cannot parse line: {}", line))?;
@@ -204,4 +162,62 @@ fn is_complete_graph(nodes: &[String], connections: &HashMap<String, Vec<String>
         .iter()
         .tuple_combinations()
         .all(|(first, second)| are_connected(first, second, connections))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+kh-tc
+qp-kh
+de-cg
+ka-co
+yn-aq
+qp-ub
+cg-tb
+vc-aq
+tb-ka
+wh-tc
+yn-cg
+kh-ub
+ta-co
+de-co
+tc-td
+tb-wq
+wh-td
+ta-ka
+td-qp
+aq-cg
+wq-ub
+ub-vc
+de-ta
+wq-aq
+wq-vc
+wh-yn
+ka-de
+kh-ta
+co-tc
+wh-qp
+tb-vc
+td-yn
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 7);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        // We know the password is 4 computers long, so ignore anything shorter than that.
+        assert_eq!(
+            part_2_with_prune(EXAMPLE_INPUT.trim().to_string(), 3)?,
+            "co,de,ka,ta".to_string()
+        );
+
+        Ok(())
+    }
 }

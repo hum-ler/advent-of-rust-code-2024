@@ -2,44 +2,25 @@ use std::{num::ParseIntError, str::FromStr};
 
 use anyhow::Result;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-7 6 4 2 1
-1 2 7 8 9
-9 7 6 2 1
-1 3 2 4 5
-8 6 4 4 1
-1 3 6 7 9
-";
-
 const INPUT_FILE: &str = "inputs/day-2.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
-    Ok(parse_lines_into_reports(lines)?
+fn part_1(input: String) -> Result<usize> {
+    Ok(parse_input_into_reports(input)?
         .iter()
         .filter(|r| r.safe)
         .count())
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    Ok(parse_lines_into_dampened_reports(lines)?
+fn part_2(input: String) -> Result<usize> {
+    Ok(parse_input_into_dampened_reports(input)?
         .iter()
         .filter(|r| r.safe)
         .count())
@@ -57,7 +38,7 @@ impl FromStr for Report {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let data = s
             .split_whitespace()
-            .map(|v| v.parse::<u8>())
+            .map(str::parse::<u8>)
             .collect::<Result<Vec<_>, _>>()?;
 
         let safe = is_safe_data(&data);
@@ -85,12 +66,8 @@ fn is_safe_decrease(pair: &[u8]) -> bool {
     pair[1] < pair[0] && pair[0] - pair[1] <= 3
 }
 
-fn parse_lines_into_reports(lines: &[String]) -> Result<Vec<Report>, ParseIntError> {
-    lines
-        .iter()
-        .map(String::as_str)
-        .map(Report::from_str)
-        .collect()
+fn parse_input_into_reports(lines: String) -> Result<Vec<Report>, ParseIntError> {
+    lines.split_terminator("\n").map(Report::from_str).collect()
 }
 
 /// Modified report for part 2.
@@ -106,7 +83,7 @@ impl FromStr for DampenedReport {
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let data = s
             .split_whitespace()
-            .map(|v| v.parse::<u8>())
+            .map(str::parse::<u8>)
             .collect::<Result<Vec<_>, _>>()?;
 
         let (safe, removed) = is_safe_data_with_dampener(&data);
@@ -141,12 +118,37 @@ fn is_safe_data_with_dampener(data: &[u8]) -> (bool, Option<usize>) {
     (false, None)
 }
 
-fn parse_lines_into_dampened_reports(
-    lines: &[String],
-) -> Result<Vec<DampenedReport>, ParseIntError> {
-    lines
-        .iter()
-        .map(String::as_str)
+fn parse_input_into_dampened_reports(input: String) -> Result<Vec<DampenedReport>, ParseIntError> {
+    input
+        .split_terminator("\n")
         .map(DampenedReport::from_str)
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+7 6 4 2 1
+1 2 7 8 9
+9 7 6 2 1
+1 3 2 4 5
+8 6 4 4 1
+1 3 6 7 9
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 2);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 4);
+
+        Ok(())
+    }
 }

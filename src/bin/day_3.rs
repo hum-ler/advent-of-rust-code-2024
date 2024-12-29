@@ -1,40 +1,26 @@
-use std::{fs::read_to_string, num::ParseIntError};
+use std::num::ParseIntError;
 
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-const EXAMPLE_1_INPUT: &str =
-    "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-
-const EXAMPLE_2_INPUT: &str =
-    "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
-
 const INPUT_FILE: &str = "inputs/day-3.txt";
 
-pub fn run_example_1() -> Result<u32> {
-    part_1(EXAMPLE_1_INPUT)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u32> {
-    part_1(read_to_string(INPUT_FILE)?.as_str())
+fn part_1(input: String) -> Result<u32> {
+    mul(&input)
 }
 
-pub fn run_example_2() -> Result<u32> {
-    part_2(EXAMPLE_2_INPUT)
-}
+fn part_2(input: String) -> Result<u32> {
+    // _mul_with_do_by_scanning(&input)
 
-pub fn run_part_2() -> Result<u32> {
-    part_2(read_to_string(INPUT_FILE)?.as_str())
-}
-
-fn part_1(input: &str) -> Result<u32> {
-    mul(input)
-}
-
-fn part_2(input: &str) -> Result<u32> {
-    // _mul_with_do_by_scanning(input)
-
-    mul_with_do_by_stripping(input)
+    mul_with_do_by_stripping(&input)
 }
 
 /// Sums up all the `mul()`s.
@@ -116,4 +102,29 @@ fn strip_donts_with_regex(input: &str) -> Result<String> {
     let input = Regex::new(r"(?s)don't\(\).*")?.replace(input.as_ref(), "");
 
     Ok(input.into_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_1_INPUT: &str =
+        "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
+
+    const EXAMPLE_2_INPUT: &str =
+        "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_1_INPUT.trim().to_string())?, 161);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_2_INPUT.trim().to_string())?, 48);
+
+        Ok(())
+    }
 }

@@ -2,41 +2,18 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-....#.....
-.........#
-..........
-..#.......
-.......#..
-..........
-.#..^.....
-........#.
-#.........
-......#...
-";
-
 const INPUT_FILE: &str = "inputs/day-6.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(input: &[String]) -> Result<usize> {
-    let (mut guard, mut grid, grid_size) = parse_input(input)?;
+fn part_1(input: String) -> Result<usize> {
+    let (mut guard, mut grid, grid_size) = parse_input(&input)?;
 
     while guard.0.is_some() {
         traverse(&mut guard, &mut grid, &grid_size)?;
@@ -45,11 +22,11 @@ fn part_1(input: &[String]) -> Result<usize> {
     Ok(grid.values().filter(|t| **t == CoordType::Visited).count())
 }
 
-fn part_2(input: &[String]) -> Result<usize> {
+fn part_2(input: String) -> Result<usize> {
     // Make use of the result from part 1.
-    let potential_positions = list_potential_positions(input)?;
+    let potential_positions = list_potential_positions(&input)?;
 
-    let (guard, grid, grid_size) = parse_input_with_direction(input)?;
+    let (guard, grid, grid_size) = parse_input_with_direction(&input)?;
 
     count_obstacle_positions(&potential_positions, &guard, &grid, &grid_size)
 }
@@ -78,11 +55,12 @@ enum CoordType {
 }
 
 /// Parses [input] into a [Guard], a map of coords against terrain type, and the size of the grid.
-fn parse_input(input: &[String]) -> Result<(Guard, HashMap<Coord, CoordType>, GridSize)> {
+fn parse_input(input: &str) -> Result<(Guard, HashMap<Coord, CoordType>, GridSize)> {
     let mut guard = (None, Direction::N);
     let mut grid = HashMap::new();
 
-    let grid_size = (input.len(), input[0].len());
+    let input = input.split_terminator("\n").collect::<Vec<_>>();
+    let grid_size = (input.len(), input.first().map_or(0, |s| s.len()));
 
     input.iter().enumerate().try_for_each(|(row, l)| {
         l.as_bytes().iter().enumerate().try_for_each(|(column, b)| {
@@ -261,7 +239,7 @@ enum TraversalOutcome {
 /// Derive the list of potential positions for the obstacle.
 ///
 /// The positions are those visited by the guard before introducing the additional obstacle.
-fn list_potential_positions(input: &[String]) -> Result<Vec<Coord>> {
+fn list_potential_positions(input: &str) -> Result<Vec<Coord>> {
     let (mut guard, mut grid, grid_size) = parse_input(input)?;
 
     // The starting location of the guard will also be marked as Visited.
@@ -290,11 +268,12 @@ fn list_potential_positions(input: &[String]) -> Result<Vec<Coord>> {
 }
 
 fn parse_input_with_direction(
-    input: &[String],
+    input: &str,
 ) -> Result<(Guard, HashMap<Coord, CoordTypeWithDirection>, GridSize)> {
     let mut guard = (None, Direction::N);
     let mut grid = HashMap::new();
 
+    let input = input.split_terminator("\n").collect::<Vec<_>>();
     let grid_size = (input.len(), input[0].len());
 
     input.iter().enumerate().try_for_each(|(row, l)| {
@@ -482,5 +461,37 @@ fn traverse_w_with_direction(
             Ok(TraversalOutcome::Continue)
         }
         CoordTypeWithDirection::VisitedWest => Ok(TraversalOutcome::Loop),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+....#.....
+.........#
+..........
+..#.......
+.......#..
+..........
+.#..^.....
+........#.
+#.........
+......#...
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 41);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 6);
+
+        Ok(())
     }
 }

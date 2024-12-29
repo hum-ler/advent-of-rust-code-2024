@@ -2,48 +2,18 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use pathfinding::prelude::{astar_bag_collect, dijkstra};
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-#################
-#...#...#...#..E#
-#.#.#.#.#.#.#.#.#
-#.#.#.#...#...#.#
-#.#.#.#.###.#.#.#
-#...#.#.#.....#.#
-#.#.#.#.#.#####.#
-#.#...#.#.#.....#
-#.#.#####.#.###.#
-#.#.#.......#...#
-#.#.###.#####.###
-#.#.#...#.....#.#
-#.#.#.#####.###.#
-#.#.#.........#.#
-#.#.#.#########.#
-#S#.............#
-#################
-";
-
 const INPUT_FILE: &str = "inputs/day-16.txt";
 
-pub fn run_example_1() -> Result<u32> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u32> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<u32> {
-    let (maze, start, end) = parse_lines_to_maze(lines)?;
+fn part_1(input: String) -> Result<u32> {
+    let (maze, start, end) = parse_input_to_maze(input)?;
 
     let start = (start, Facing::East);
 
@@ -54,8 +24,8 @@ fn part_1(lines: &[String]) -> Result<u32> {
     }
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    let (maze, start, end) = parse_lines_to_maze(lines)?;
+fn part_2(input: String) -> Result<usize> {
+    let (maze, start, end) = parse_input_to_maze(input)?;
 
     let start = (start, Facing::East);
 
@@ -87,9 +57,9 @@ type Coord = (usize, usize);
 type Node = (Coord, Facing);
 
 /// Parse the input into the maze grid, and returns the start and end coordinates.
-fn parse_lines_to_maze(lines: &[String]) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
-    let mut maze = lines
-        .iter()
+fn parse_input_to_maze(input: String) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
+    let mut maze = input
+        .split_terminator("\n")
         .map(|l| l.as_bytes().to_owned())
         .collect::<Vec<Vec<_>>>();
 
@@ -166,5 +136,44 @@ fn successors(node: &Node, maze: &[Vec<u8>]) -> Vec<(Node, u32)> {
 
             nodes
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+#################
+#...#...#...#..E#
+#.#.#.#.#.#.#.#.#
+#.#.#.#...#...#.#
+#.#.#.#.###.#.#.#
+#...#.#.#.....#.#
+#.#.#.#.#.#####.#
+#.#...#.#.#.....#
+#.#.#####.#.###.#
+#.#.#.......#...#
+#.#.###.#####.###
+#.#.#...#.....#.#
+#.#.#.#####.###.#
+#.#.#.........#.#
+#.#.#.#########.#
+#S#.............#
+#################
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 11048);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 64);
+
+        Ok(())
     }
 }

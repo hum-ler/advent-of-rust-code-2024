@@ -1,39 +1,18 @@
 use anyhow::Result;
 use itertools::Itertools;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-89010123
-78121874
-87430965
-96549874
-45678903
-32019012
-01329801
-10456732
-";
-
 const INPUT_FILE: &str = "inputs/day-10.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
-    let (grid, grid_size) = parse_lines_to_grid(lines);
+fn part_1(input: String) -> Result<usize> {
+    let (grid, grid_size) = parse_input_to_grid(&input);
 
     Ok(find_trailheads(&grid)
         .iter()
@@ -41,8 +20,8 @@ fn part_1(lines: &[String]) -> Result<usize> {
         .sum())
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    let (grid, grid_size) = parse_lines_to_grid(lines);
+fn part_2(input: String) -> Result<usize> {
+    let (grid, grid_size) = parse_input_to_grid(&input);
 
     Ok(find_trailheads(&grid)
         .iter()
@@ -65,22 +44,23 @@ impl Node {
 
 type GridSize = (usize, usize);
 
-/// Parses [lines] into a grid of [Node]s, and the row- and column counts.
-fn parse_lines_to_grid(lines: &[String]) -> (Vec<Vec<Node>>, GridSize) {
-    let grid = lines
+/// Parses [input] into a grid of [Node]s, and the row- and column counts.
+fn parse_input_to_grid(input: &str) -> (Vec<Vec<Node>>, GridSize) {
+    let input = input.split_terminator("\n").collect::<Vec<_>>();
+    let row_count = input.len();
+    let col_count = input.first().map_or(0, |s| s.len());
+
+    let grid = input
         .iter()
         .enumerate()
-        .map(|(row, l)| {
-            l.as_bytes()
+        .map(|(row, line)| {
+            line.as_bytes()
                 .iter()
                 .enumerate()
-                .map(|(col, b)| Node::new(b - b'0', row, col))
+                .map(|(col, byte)| Node::new(byte - b'0', row, col))
                 .collect()
         })
         .collect();
-
-    let row_count = lines.len();
-    let col_count = lines.first().map_or(0, String::len);
 
     (grid, (row_count, col_count))
 }
@@ -145,4 +125,34 @@ fn find_ends<'a>(trailhead: &Node, grid: &'a [Vec<Node>], grid_size: &GridSize) 
     }
 
     ends
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+89010123
+78121874
+87430965
+96549874
+45678903
+32019012
+01329801
+10456732
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 36);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 81);
+
+        Ok(())
+    }
 }

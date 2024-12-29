@@ -1,77 +1,22 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    fs::read_to_string,
 };
 
 use anyhow::{anyhow, Result};
 
-const EXAMPLE_INPUT: &str = r"
-x00: 1
-x01: 0
-x02: 1
-x03: 1
-x04: 0
-y00: 1
-y01: 1
-y02: 1
-y03: 1
-y04: 1
-
-ntg XOR fgs -> mjb
-y02 OR x01 -> tnw
-kwq OR kpj -> z05
-x00 OR x03 -> fst
-tgd XOR rvg -> z01
-vdt OR tnw -> bfw
-bfw AND frj -> z10
-ffh OR nrd -> bqk
-y00 AND y03 -> djm
-y03 OR y00 -> psh
-bqk OR frj -> z08
-tnw OR fst -> frj
-gnj AND tgd -> z11
-bfw XOR mjb -> z00
-x03 OR x00 -> vdt
-gnj AND wpb -> z02
-x04 AND y00 -> kjc
-djm OR pbm -> qhw
-nrd AND vdt -> hwm
-kjc AND fst -> rvg
-y04 OR y02 -> fgs
-y01 AND x02 -> pbm
-ntg OR kjc -> kwq
-psh XOR fgs -> tgd
-qhw XOR tgd -> z09
-pbm OR djm -> kpj
-x03 XOR y03 -> ffh
-x00 XOR y04 -> ntg
-bfw OR bqk -> z06
-nrd XOR fgs -> wpb
-frj XOR qhw -> z04
-bqk OR frj -> z07
-y03 OR x01 -> nrd
-hwm AND bqk -> z03
-tgd XOR rvg -> z12
-tnw OR pbm -> gnj
-";
-
 const INPUT_FILE: &str = "inputs/day-24.txt";
 
-pub fn run_example_1() -> Result<u64> {
-    part_1(EXAMPLE_INPUT.trim())
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u64> {
-    part_1(read_to_string(INPUT_FILE)?.trim())
-}
-
-pub fn run_part_2() -> Result<String> {
-    part_2(read_to_string(INPUT_FILE)?.trim())
-}
-
-fn part_1(input: &str) -> Result<u64> {
-    let (mut resolved_signals, mut unresolved_signals) = parse_input_to_signals(input)?;
+fn part_1(input: String) -> Result<u64> {
+    let (mut resolved_signals, mut unresolved_signals) = parse_input_to_signals(&input)?;
     let z_signals = find_signals_starting_with_letter("z", &unresolved_signals);
 
     let mut number = bits_to_number(&z_signals, &resolved_signals)?;
@@ -88,7 +33,7 @@ fn part_1(input: &str) -> Result<u64> {
     }
 }
 
-fn part_2(input: &str) -> Result<String> {
+fn part_2(input: String) -> Result<String> {
     // We should be looking at a 45-bit ripple-carry adder.
     //
     // At the very least, we should expect to find the following operation:
@@ -106,7 +51,7 @@ fn part_2(input: &str) -> Result<String> {
     //
     // For 45 bits we should expect 2 + 44 * 5 = 222 operations, which matches the input.
 
-    let (mut resolved_signals, mut unresolved_signals) = parse_input_to_signals(input)?;
+    let (mut resolved_signals, mut unresolved_signals) = parse_input_to_signals(&input)?;
 
     // let mut _signals: HashSet<Operation> =
     //     HashSet::from_iter(unresolved_signals.clone().into_values());
@@ -532,4 +477,66 @@ fn _remove_correct_signals(signals: &mut HashSet<Operation>) -> HashMap<String, 
     }
 
     substitutions
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+x00: 1
+x01: 0
+x02: 1
+x03: 1
+x04: 0
+y00: 1
+y01: 1
+y02: 1
+y03: 1
+y04: 1
+
+ntg XOR fgs -> mjb
+y02 OR x01 -> tnw
+kwq OR kpj -> z05
+x00 OR x03 -> fst
+tgd XOR rvg -> z01
+vdt OR tnw -> bfw
+bfw AND frj -> z10
+ffh OR nrd -> bqk
+y00 AND y03 -> djm
+y03 OR y00 -> psh
+bqk OR frj -> z08
+tnw OR fst -> frj
+gnj AND tgd -> z11
+bfw XOR mjb -> z00
+x03 OR x00 -> vdt
+gnj AND wpb -> z02
+x04 AND y00 -> kjc
+djm OR pbm -> qhw
+nrd AND vdt -> hwm
+kjc AND fst -> rvg
+y04 OR y02 -> fgs
+y01 AND x02 -> pbm
+ntg OR kjc -> kwq
+psh XOR fgs -> tgd
+qhw XOR tgd -> z09
+pbm OR djm -> kpj
+x03 XOR y03 -> ffh
+x00 XOR y04 -> ntg
+bfw OR bqk -> z06
+nrd XOR fgs -> wpb
+frj XOR qhw -> z04
+bqk OR frj -> z07
+y03 OR x01 -> nrd
+hwm AND bqk -> z03
+tgd XOR rvg -> z12
+tnw OR pbm -> gnj
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 2024);
+
+        Ok(())
+    }
 }

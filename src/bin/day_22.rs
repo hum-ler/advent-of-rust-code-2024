@@ -2,43 +2,19 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_1_INPUT: &str = r"
-1
-10
-100
-2024
-";
-
-const EXAMPLE_2_INPUT: &str = r"
-1
-2
-3
-2024
-";
-
 const INPUT_FILE: &str = "inputs/day-22.txt";
 
-pub fn run_example_1() -> Result<u64> {
-    part_1(&string_to_lines(EXAMPLE_1_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u64> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<i64> {
-    part_2(&string_to_lines(EXAMPLE_2_INPUT))
-}
-
-pub fn run_part_2() -> Result<i64> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<u64> {
-    lines
-        .iter()
+fn part_1(input: String) -> Result<u64> {
+    input
+        .split_terminator("\n")
         .map(|l| l.parse::<u64>())
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
@@ -51,9 +27,9 @@ fn part_1(lines: &[String]) -> Result<u64> {
         .sum()
 }
 
-fn part_2(lines: &[String]) -> Result<i64> {
-    let change_sequence_maps = lines
-        .iter()
+fn part_2(input: String) -> Result<i64> {
+    let change_sequence_maps = input
+        .split_terminator("\n")
         .map(|l| l.parse::<u64>())
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
@@ -145,4 +121,37 @@ fn map_change_sequence(banana_sequence: Vec<i64>) -> HashMap<String, i64> {
     }
 
     change_sequence_to_price
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_1_INPUT: &str = r"
+1
+10
+100
+2024
+";
+
+    const EXAMPLE_2_INPUT: &str = r"
+1
+2
+3
+2024
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_1_INPUT.trim().to_string())?, 37327623);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_2_INPUT.trim().to_string())?, 23);
+
+        Ok(())
+    }
 }

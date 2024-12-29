@@ -1,58 +1,19 @@
-use std::{collections::HashSet, fs::read_to_string};
+use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
 
-const EXAMPLE_INPUT: &str = r"
-47|53
-97|13
-97|61
-97|47
-75|29
-61|13
-75|53
-29|13
-97|29
-53|29
-61|53
-97|53
-61|29
-47|13
-75|47
-97|75
-47|61
-75|61
-47|29
-75|13
-53|13
-
-75,47,61,53,29
-97,61,53,29,13
-75,29,13
-75,97,47,61,53
-61,13,29
-97,13,75,29,47
-";
-
 const INPUT_FILE: &str = "inputs/day-5.txt";
 
-pub fn run_example_1() -> Result<u32> {
-    part_1(EXAMPLE_INPUT)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u32> {
-    part_1(&read_to_string(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<u32> {
-    part_2(EXAMPLE_INPUT)
-}
-
-pub fn run_part_2() -> Result<u32> {
-    part_2(&read_to_string(INPUT_FILE)?)
-}
-
-fn part_1(input: &str) -> Result<u32> {
-    let (updates, rules) = parse_input(input)?;
+fn part_1(input: String) -> Result<u32> {
+    let (updates, rules) = parse_input(&input)?;
 
     updates
         .iter()
@@ -61,8 +22,8 @@ fn part_1(input: &str) -> Result<u32> {
         .sum()
 }
 
-fn part_2(input: &str) -> Result<u32> {
-    let (updates, rules) = parse_input(input)?;
+fn part_2(input: String) -> Result<u32> {
+    let (updates, rules) = parse_input(&input)?;
 
     updates
         .iter()
@@ -154,4 +115,54 @@ fn get_power(page_number: &str, update: &[&str], rules: &HashSet<&str>) -> usize
             rules.contains(search_term.as_str())
         })
         .count()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+47|53
+97|13
+97|61
+97|47
+75|29
+61|13
+75|53
+29|13
+97|29
+53|29
+61|53
+97|53
+61|29
+47|13
+75|47
+97|75
+47|61
+75|61
+47|29
+75|13
+53|13
+
+75,47,61,53,29
+97,61,53,29,13
+75,29,13
+75,97,47,61,53
+61,13,29
+97,13,75,29,47
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 143);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 123);
+
+        Ok(())
+    }
 }

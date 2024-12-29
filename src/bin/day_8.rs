@@ -1,45 +1,20 @@
 use std::collections::{HashMap, HashSet};
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use itertools::Itertools;
-
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-............
-........0...
-.....0......
-.......0....
-....0.......
-......A.....
-............
-............
-........A...
-.........A..
-............
-............
-";
 
 const INPUT_FILE: &str = "inputs/day-8.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
-    let (hash_map, row_count, column_count) = parse_lines_into_sets(lines)?;
+fn part_1(input: String) -> Result<usize> {
+    let (hash_map, row_count, column_count) = parse_input_into_sets(&input)?;
 
     Ok(hash_map
         .values()
@@ -52,8 +27,8 @@ fn part_1(lines: &[String]) -> Result<usize> {
         .count())
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    let (hash_map, row_count, column_count) = parse_lines_into_sets(lines)?;
+fn part_2(input: String) -> Result<usize> {
+    let (hash_map, row_count, column_count) = parse_input_into_sets(&input)?;
 
     Ok(hash_map
         .values()
@@ -68,64 +43,24 @@ fn part_2(lines: &[String]) -> Result<usize> {
 
 type Coord = (usize, usize);
 
-/// Parses input into a hash of a symbol to the set of its antenna, plus the total counts of rows
-/// and columns in the grid.
-fn parse_lines_into_sets(lines: &[String]) -> Result<(HashMap<u8, HashSet<Coord>>, usize, usize)> {
-    let mut hash_map: HashMap<u8, HashSet<Coord>> = HashMap::new();
+/// Parses input into a map of symbols to the set of antenna, plus the number of rows and columns in
+/// the grid.
+fn parse_input_into_sets(input: &str) -> Result<(HashMap<u8, HashSet<Coord>>, usize, usize)> {
+    let mut coords: HashMap<u8, HashSet<Coord>> = HashMap::new();
 
-    lines
-        .iter()
-        .enumerate()
-        .try_for_each::<_, Result<()>>(|(row, s)| {
-            s.as_bytes()
-                .iter()
-                .enumerate()
-                .try_for_each::<_, Result<()>>(|(column, c)| {
-                    match c {
-                        b'.' => (),
-                        c => {
-                            if !hash_map.contains_key(c) {
-                                hash_map.insert(*c, HashSet::new());
-                            }
+    let input = input.split_terminator("\n").collect::<Vec<_>>();
+    let row_count = input.len();
+    let column_count = input.first().map_or(0, |s| s.len());
 
-                            let hash_set = hash_map
-                                .get_mut(c)
-                                .ok_or(anyhow!("Cannot get set: {}", c))?;
-                            hash_set.insert((row, column));
-                        }
-                    }
-
-                    Ok(())
-                })?;
-
-            Ok(())
-        })?;
-
-    let row_count = lines.len();
-    let column_count = lines[0].len();
-
-    Ok((hash_map, row_count, column_count))
-}
-
-/// [Improved by Gemini] Parses input into a hash of a symbol to the set of its antenna, plus the
-/// total counts of rows and columns in the grid.
-fn _gemini_parse_lines_into_sets(
-    lines: &[String],
-) -> Result<(HashMap<u8, HashSet<Coord>>, usize, usize)> {
-    let mut symbol_coords: HashMap<u8, HashSet<Coord>> = HashMap::new();
-
-    for (row, line) in lines.iter().enumerate() {
-        for (col, c) in line.bytes().enumerate() {
-            if c != b'.' {
-                symbol_coords.entry(c).or_default().insert((row, col));
+    for (row, line) in input.iter().enumerate() {
+        for (col, byte) in line.bytes().enumerate() {
+            if byte != b'.' {
+                coords.entry(byte).or_default().insert((row, col));
             }
         }
     }
 
-    let row_count = lines.len();
-    let col_count = lines.first().map_or(0, String::len); // Handle empty input
-
-    Ok((symbol_coords, row_count, col_count))
+    Ok((coords, row_count, column_count))
 }
 
 /// Calculates the antinodes on either side of [first] and [second].
@@ -288,4 +223,38 @@ fn antinodes_with_harmonics(
     }
 
     antinodes
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+............
+........0...
+.....0......
+.......0....
+....0.......
+......A.....
+............
+............
+........A...
+.........A..
+............
+............
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 14);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 34);
+
+        Ok(())
+    }
 }

@@ -2,16 +2,6 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use anyhow::{anyhow, Result};
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-029A
-980A
-179A
-456A
-379A
-";
-
 const INPUT_FILE: &str = "inputs/day-21.txt";
 
 static NUMERIC_PAD_MOVEMENTS: LazyLock<HashMap<(u8, u8), &str>> =
@@ -20,26 +10,22 @@ static NUMERIC_PAD_MOVEMENTS: LazyLock<HashMap<(u8, u8), &str>> =
 static DIRECTIONAL_PAD_MOVEMENTS: LazyLock<HashMap<(u8, u8), &str>> =
     LazyLock::new(init_directional_pad_movements);
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn _run_part_2() -> Result<usize> {
-    _part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(codes: &[String]) -> Result<usize> {
+fn part_1(codes: String) -> Result<usize> {
     let first_redirection =
         keypad_redirection(&DIRECTIONAL_PAD_MOVEMENTS, NUMERIC_PAD_MOVEMENTS.clone());
 
     let second_redirection = keypad_redirection(&DIRECTIONAL_PAD_MOVEMENTS, first_redirection);
 
     codes
-        .iter()
+        .split_terminator("\n")
         .map(|code| {
             let code = format!("{}{}", "A", code);
 
@@ -61,7 +47,7 @@ fn part_1(codes: &[String]) -> Result<usize> {
         .sum()
 }
 
-fn _part_2(codes: &[String]) -> Result<usize> {
+fn part_2(codes: String) -> Result<usize> {
     let numeric_pad_movements = _init_numeric_pad_movements_for_input();
 
     let mut repeated_redirection =
@@ -72,7 +58,7 @@ fn _part_2(codes: &[String]) -> Result<usize> {
     }
 
     codes
-        .iter()
+        .split_terminator("\n")
         .map(|code| {
             let code = format!("{}{}", "A", code);
 
@@ -328,4 +314,24 @@ where
     }
 
     movements
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+029A
+980A
+179A
+456A
+379A
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 126384);
+
+        Ok(())
+    }
 }

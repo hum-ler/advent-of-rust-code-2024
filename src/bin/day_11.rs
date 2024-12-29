@@ -1,26 +1,20 @@
-use std::{collections::HashMap, fs::read_to_string, sync::Mutex};
+use std::{collections::HashMap, sync::Mutex};
 
 use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-const EXAMPLE_INPUT: &str = "125 17";
-
 const INPUT_FILE: &str = "inputs/day-11.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(EXAMPLE_INPUT)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(read_to_string(INPUT_FILE)?.trim())
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(read_to_string(INPUT_FILE)?.trim())
-}
-
-fn part_1(input: &str) -> Result<usize> {
+fn part_1(input: String) -> Result<usize> {
     let blink_count = 25;
 
     let mut stones = input
@@ -35,7 +29,7 @@ fn part_1(input: &str) -> Result<usize> {
     Ok(stones.len())
 }
 
-fn part_2(input: &str) -> Result<usize> {
+fn part_2(input: String) -> Result<usize> {
     // The counting can be done on each stone individually and then adding up.
     //
     // Try brute-forcing the answer in 2 parts:
@@ -92,5 +86,19 @@ fn transform(stone: &u64) -> Vec<u64> {
             vec![x / divisor, x % divisor]
         }
         x => vec![x * 2024],
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = "125 17";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 55312);
+
+        Ok(())
     }
 }

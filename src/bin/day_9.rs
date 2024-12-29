@@ -1,39 +1,25 @@
-use std::fs::read_to_string;
-
 use anyhow::{anyhow, Result};
-
-const EXAMPLE_INPUT: &str = "2333133121414131402";
 
 const INPUT_FILE: &str = "inputs/day-9.txt";
 
-const ASCII_ZERO: u8 = 48;
-
-pub fn run_example_1() -> Result<usize> {
-    part_1(EXAMPLE_INPUT)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(read_to_string(INPUT_FILE)?.trim())
-}
-
-pub fn run_example_2() -> Result<usize> {
-    part_2(EXAMPLE_INPUT)
-}
-
-pub fn run_part_2() -> Result<usize> {
-    part_2(read_to_string(INPUT_FILE)?.trim())
-}
-
-fn part_1(input: &str) -> Result<usize> {
-    let disk = parse_disk_map_to_disk(input);
+fn part_1(input: String) -> Result<usize> {
+    let disk = parse_disk_map_to_disk(&input);
 
     let disk = compact(disk)?;
 
     Ok(checksum(&disk))
 }
 
-fn part_2(input: &str) -> Result<usize> {
-    let blocks = parse_disk_map_to_contiguous_blocks(input);
+fn part_2(input: String) -> Result<usize> {
+    let blocks = parse_disk_map_to_contiguous_blocks(&input);
 
     let blocks = compact_contiguous_blocks(blocks)?;
 
@@ -48,9 +34,9 @@ fn parse_disk_map_to_disk(input: &str) -> Vec<Option<usize>> {
         .bytes()
         .enumerate()
         .flat_map(|(id, size)| {
-            assert!(size >= ASCII_ZERO);
+            assert!(size >= b'0');
 
-            let size = usize::from(size - ASCII_ZERO);
+            let size = (size - b'0') as usize;
 
             if id % 2 == 0 {
                 // File
@@ -174,9 +160,9 @@ fn parse_disk_map_to_contiguous_blocks(input: &str) -> Vec<ContiguousBlock> {
         .bytes()
         .enumerate()
         .filter_map(|(id, size)| {
-            assert!(size >= ASCII_ZERO);
+            assert!(size >= b'0');
 
-            let size = usize::from(size - ASCII_ZERO);
+            let size = (size - b'0') as usize;
 
             if id % 2 == 0 {
                 // File
@@ -252,4 +238,25 @@ fn compact_contiguous_blocks(mut blocks: Vec<ContiguousBlock>) -> Result<Vec<Con
 /// Converts blocks to the same disk format as part 1.
 fn convert_contiguous_blocks_to_disk(blocks: Vec<ContiguousBlock>) -> Vec<Option<usize>> {
     blocks.iter().flat_map(|b| vec![b.id; b.size]).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = "2333133121414131402";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 1928);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 2858);
+
+        Ok(())
+    }
 }

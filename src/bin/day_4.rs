@@ -1,44 +1,21 @@
 use anyhow::Result;
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-MMMSXXMASM
-MSAMXMSMSA
-AMXSXMAAMM
-MSAMASMSMX
-XMASAMXAMM
-XXAMMXXAMA
-SMSMSASXSS
-SAXAMASAAA
-MAMMMXMMMM
-MXMXAXMASX
-";
-
 const INPUT_FILE: &str = "inputs/day-4.txt";
 
-pub fn run_example_1() -> Result<u32> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u32> {
-    part_1(&file_to_lines(INPUT_FILE)?)
+fn part_1(input: String) -> Result<u32> {
+    Ok(WordSearch::from(input).tally_part_1())
 }
 
-pub fn run_example_2() -> Result<u32> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<u32> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<u32> {
-    Ok(WordSearch::from(lines).tally_part_1())
-}
-
-fn part_2(lines: &[String]) -> Result<u32> {
-    Ok(WordSearch::from(lines).tally_part_2())
+fn part_2(input: String) -> Result<u32> {
+    Ok(WordSearch::from(input).tally_part_2())
 }
 
 struct WordSearch {
@@ -47,12 +24,12 @@ struct WordSearch {
     column_count: usize,
 }
 
-impl From<&[String]> for WordSearch {
-    fn from(value: &[String]) -> Self {
+impl From<String> for WordSearch {
+    fn from(value: String) -> Self {
         let grid = value
-            .iter()
-            .map(|s| s.to_owned().into_bytes())
-            .collect::<Vec<Vec<u8>>>();
+            .split_terminator("\n")
+            .map(|s| s.to_string().into_bytes())
+            .collect::<Vec<Vec<_>>>();
         let row_count = grid.len();
         let column_count = grid[0].len();
 
@@ -307,5 +284,37 @@ impl WordSearch {
 
         (self.grid[row - 1][column - 1] == b'M' && self.grid[row + 1][column + 1] == b'S')
             || (self.grid[row - 1][column - 1] == b'S' && self.grid[row + 1][column + 1] == b'M')
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+MMMSXXMASM
+MSAMXMSMSA
+AMXSXMAAMM
+MSAMASMSMX
+XMASAMXAMM
+XXAMMXXAMA
+SMSMSASXSS
+SAXAMASAAA
+MAMMMXMMMM
+MXMXAXMASX
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 18);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 9);
+
+        Ok(())
     }
 }

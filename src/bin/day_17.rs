@@ -1,50 +1,26 @@
-use std::{collections::VecDeque, fs::read_to_string, str::FromStr};
+use std::{collections::VecDeque, str::FromStr};
 
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-const EXAMPLE_1_INPUT: &str = r"
-Register A: 729
-Register B: 0
-Register C: 0
-
-Program: 0,1,5,4,3,0
-";
-
-const EXAMPLE_2_INPUT: &str = r"
-Register A: 2024
-Register B: 0
-Register C: 0
-
-Program: 0,3,5,4,3,0
-";
-
 const INPUT_FILE: &str = "inputs/day-17.txt";
 
-pub fn run_example_1() -> Result<String> {
-    part_1(EXAMPLE_1_INPUT.trim())
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<String> {
-    part_1(read_to_string(INPUT_FILE)?.trim())
-}
-
-pub fn run_example_2() -> Result<u64> {
-    example_2(EXAMPLE_2_INPUT.trim())
-}
-
-pub fn run_part_2() -> Result<u64> {
-    part_2(read_to_string(INPUT_FILE)?.trim())
-}
-
-fn part_1(input: &str) -> Result<String> {
-    let mut computer = Computer::from_str(input)?;
+fn part_1(input: String) -> Result<String> {
+    let mut computer = Computer::from_str(&input)?;
 
     run(&mut computer)
 }
 
-fn example_2(input: &str) -> Result<u64> {
-    let computer = Computer::from_str(input)?;
+fn _part_2_example(input: String) -> Result<u64> {
+    let computer = Computer::from_str(&input)?;
 
     let mut a = 0;
 
@@ -52,7 +28,7 @@ fn example_2(input: &str) -> Result<u64> {
         let mut computer = computer.clone();
 
         computer.a = a;
-        run_with_termination_check(&mut computer)?;
+        _run_with_termination_check(&mut computer)?;
 
         if computer.program == computer.output {
             return Ok(a);
@@ -62,7 +38,7 @@ fn example_2(input: &str) -> Result<u64> {
     }
 }
 
-fn part_2(input: &str) -> Result<u64> {
+fn part_2(input: String) -> Result<u64> {
     // Brute-force solution does not work.
     //
     // Program is 2,4,1,3,7,5,0,3,1,5,4,4,5,5,3,0.
@@ -88,7 +64,7 @@ fn part_2(input: &str) -> Result<u64> {
     let mut output_queue: VecDeque<u64> = VecDeque::new();
     output_queue.push_back(6);
 
-    Computer::from_str(input)?
+    Computer::from_str(&input)?
         .program
         .into_iter()
         .rev()
@@ -295,7 +271,7 @@ fn combo_operand(operand: u64, computer: &Computer) -> Result<u64> {
 /// Compares [output] with [program].
 ///
 /// Return true if [output] is prefix of [program].
-fn output_follows_program(output: &[u64], program: &[u64]) -> bool {
+fn _output_follows_program(output: &[u64], program: &[u64]) -> bool {
     if output.is_empty() {
         return true;
     }
@@ -309,9 +285,9 @@ fn output_follows_program(output: &[u64], program: &[u64]) -> bool {
 /// Runs the program with check for early termination.
 ///
 /// Stops running once output does not match program.
-fn run_with_termination_check(computer: &mut Computer) -> Result<()> {
+fn _run_with_termination_check(computer: &mut Computer) -> Result<()> {
     while computer.program.get(computer.ip).is_some() {
-        if let Ok(true) = step_with_termination_check(computer) {
+        if let Ok(true) = _step_with_termination_check(computer) {
             break;
         }
     }
@@ -322,7 +298,7 @@ fn run_with_termination_check(computer: &mut Computer) -> Result<()> {
 /// Executes an operation with check for early termination.
 ///
 /// Returns true (i.e. should terminate) if output does not match program.
-fn step_with_termination_check(computer: &mut Computer) -> Result<bool> {
+fn _step_with_termination_check(computer: &mut Computer) -> Result<bool> {
     let Some(opcode) = computer.program.get(computer.ip) else {
         return Err(anyhow!("Cannot retrieve opcode: ip out of bound"));
     };
@@ -336,7 +312,7 @@ fn step_with_termination_check(computer: &mut Computer) -> Result<bool> {
         2 => bst(computer, *operand),
         3 => jnz(computer, *operand),
         4 => bxc(computer, *operand),
-        5 => out_with_termination_check(computer, *operand),
+        5 => _out_with_termination_check(computer, *operand),
         6 => bdv(computer, *operand),
         7 => cdv(computer, *operand),
         x => Err(anyhow!("Invalid opcode: {x}")),
@@ -346,12 +322,53 @@ fn step_with_termination_check(computer: &mut Computer) -> Result<bool> {
 /// out operation with check for early termination.
 ///
 /// Returns true (i.e. should terminate) if output does not match program.
-fn out_with_termination_check(computer: &mut Computer, operand: u64) -> Result<bool> {
+fn _out_with_termination_check(computer: &mut Computer, operand: u64) -> Result<bool> {
     let operand = combo_operand(operand, computer)?;
 
     computer.output.push(operand % 8);
 
     computer.ip += 2;
 
-    Ok(!output_follows_program(&computer.output, &computer.program))
+    Ok(!_output_follows_program(
+        &computer.output,
+        &computer.program,
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_1_INPUT: &str = r"
+Register A: 729
+Register B: 0
+Register C: 0
+
+Program: 0,1,5,4,3,0
+";
+
+    const EXAMPLE_2_INPUT: &str = r"
+Register A: 2024
+Register B: 0
+Register C: 0
+
+Program: 0,3,5,4,3,0
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(
+            part_1(EXAMPLE_1_INPUT.trim().to_string())?,
+            "4,6,3,5,6,3,5,2,1,0".to_string()
+        );
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(_part_2_example(EXAMPLE_2_INPUT.trim().to_string())?, 117440);
+
+        Ok(())
+    }
 }

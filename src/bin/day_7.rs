@@ -2,40 +2,18 @@ use std::{num::ParseIntError, str::FromStr};
 
 use anyhow::{anyhow, Result};
 
-use crate::{file_to_lines, string_to_lines};
-
-const EXAMPLE_INPUT: &str = r"
-190: 10 19
-3267: 81 40 27
-83: 17 5
-156: 15 6
-7290: 6 8 6 15
-161011: 16 10 13
-192: 17 8 14
-21037: 9 7 18 13
-292: 11 6 16 20
-";
-
 const INPUT_FILE: &str = "inputs/day-7.txt";
 
-pub fn run_example_1() -> Result<u64> {
-    part_1(&string_to_lines(EXAMPLE_INPUT))
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<u64> {
-    part_1(&file_to_lines(INPUT_FILE)?)
-}
-
-pub fn run_example_2() -> Result<u64> {
-    part_2(&string_to_lines(EXAMPLE_INPUT))
-}
-
-pub fn run_part_2() -> Result<u64> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<u64> {
-    parse_lines_to_equations(lines)?
+fn part_1(input: String) -> Result<u64> {
+    parse_input_to_equations(input)?
         .iter()
         .try_fold(0, |acc, e| {
             if e.operators(false)?.is_some() {
@@ -46,8 +24,8 @@ fn part_1(lines: &[String]) -> Result<u64> {
         })
 }
 
-fn part_2(lines: &[String]) -> Result<u64> {
-    parse_lines_to_equations(lines)?
+fn part_2(input: String) -> Result<u64> {
+    parse_input_to_equations(input)?
         .iter()
         .try_fold(0, |acc, e| {
             if e.operators(true)?.is_some() {
@@ -158,14 +136,44 @@ impl Equation {
     }
 }
 
-fn parse_lines_to_equations(lines: &[String]) -> Result<Vec<Equation>> {
+fn parse_input_to_equations(lines: String) -> Result<Vec<Equation>> {
     lines
-        .iter()
-        .map(String::as_str)
+        .split_terminator("\n")
         .map(Equation::from_str)
         .collect()
 }
 
 fn concatenate(first: u64, second: u64) -> Result<u64, ParseIntError> {
     (first.to_string() + &second.to_string()).parse()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+190: 10 19
+3267: 81 40 27
+83: 17 5
+156: 15 6
+7290: 6 8 6 15
+161011: 16 10 13
+192: 17 8 14
+21037: 9 7 18 13
+292: 11 6 16 20
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 3749);
+
+        Ok(())
+    }
+
+    #[test]
+    fn example_2() -> Result<()> {
+        assert_eq!(part_2(EXAMPLE_INPUT.trim().to_string())?, 11387);
+
+        Ok(())
+    }
 }

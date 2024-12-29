@@ -1,66 +1,28 @@
-use std::{fs::read_to_string, str::FromStr};
+use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 
-const EXAMPLE_INPUT: &str = r"
-#####
-.####
-.####
-.####
-.#.#.
-.#...
-.....
-
-#####
-##.##
-.#.##
-...##
-...#.
-...#.
-.....
-
-.....
-#....
-#....
-#...#
-#.#.#
-#.###
-#####
-
-.....
-.....
-#.#..
-###..
-###.#
-###.#
-#####
-
-.....
-.....
-.....
-#....
-#.#..
-#.#.#
-#####
-";
-
 const INPUT_FILE: &str = "inputs/day-25.txt";
 
-pub fn run_example_1() -> Result<usize> {
-    part_1(EXAMPLE_INPUT.trim())
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(read_to_string(INPUT_FILE)?.trim())
-}
-
-fn part_1(input: &str) -> Result<usize> {
-    let (locks, keys) = parse_input_into_locks_and_keys(input)?;
+fn part_1(input: String) -> Result<usize> {
+    let (locks, keys) = parse_input_into_locks_and_keys(&input)?;
 
     Ok(locks
         .iter()
         .map(|lock| keys.iter().filter(|key| key.fits_in(lock)).count())
         .sum())
+}
+
+fn part_2(_input: String) -> Result<()> {
+    Err(anyhow!("No part 2"))
 }
 
 struct Lock {
@@ -158,4 +120,58 @@ fn parse_input_into_locks_and_keys(input: &str) -> Result<(Vec<Lock>, Vec<Key>)>
     })?;
 
     Ok((locks, keys))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const EXAMPLE_INPUT: &str = r"
+#####
+.####
+.####
+.####
+.#.#.
+.#...
+.....
+
+#####
+##.##
+.#.##
+...##
+...#.
+...#.
+.....
+
+.....
+#....
+#....
+#...#
+#.#.#
+#.###
+#####
+
+.....
+.....
+#.#..
+###..
+###.#
+###.#
+#####
+
+.....
+.....
+.....
+#....
+#.#..
+#.#.#
+#####
+";
+
+    #[test]
+    fn example_1() -> Result<()> {
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 3);
+
+        Ok(())
+    }
 }

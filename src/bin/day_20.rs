@@ -2,26 +2,6 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use pathfinding::prelude::dijkstra;
 
-use crate::file_to_lines;
-
-const _EXAMPLE_INPUT: &str = r"
-###############
-#...#...#.....#
-#.#.#.#.#.###.#
-#S#...#.#.#...#
-#######.#.#.###
-#######.#.#...#
-#######.#.###.#
-###..E#...#...#
-###.#######.###
-#...###...#...#
-#.#####.#.###.#
-#.#...#.#.#...#
-#.#.#.#.#.#.###
-#...#...#...###
-###############
-";
-
 const INPUT_FILE: &str = "inputs/day-20.txt";
 
 const PART_1_CHEAT_DURATION: usize = 2;
@@ -30,16 +10,16 @@ const PART_2_CHEAT_DURATION: usize = 20;
 
 const TARGET_TIME_SAVED: usize = 100;
 
-pub fn run_part_1() -> Result<usize> {
-    part_1(&file_to_lines(INPUT_FILE)?)
+fn main() {
+    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+        Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
+        Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
+        Err(error) => println!("{:?}", error),
+    }
 }
 
-pub fn run_part_2() -> Result<usize> {
-    part_2(&file_to_lines(INPUT_FILE)?)
-}
-
-fn part_1(lines: &[String]) -> Result<usize> {
-    let (grid, start, end) = parse_lines_to_grid(lines)?;
+fn part_1(input: String) -> Result<usize> {
+    let (grid, start, end) = parse_input_to_grid(input)?;
 
     let Some((path, _)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
         return Err(anyhow!("Cannot find shortest path"));
@@ -52,8 +32,8 @@ fn part_1(lines: &[String]) -> Result<usize> {
     ))
 }
 
-fn part_2(lines: &[String]) -> Result<usize> {
-    let (grid, start, end) = parse_lines_to_grid(lines)?;
+fn part_2(input: String) -> Result<usize> {
+    let (grid, start, end) = parse_input_to_grid(input)?;
 
     let Some((path, _)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
         return Err(anyhow!("Cannot find shortest path"));
@@ -68,9 +48,9 @@ fn part_2(lines: &[String]) -> Result<usize> {
 
 type Coord = (usize, usize);
 
-fn parse_lines_to_grid(lines: &[String]) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
-    let mut grid = lines
-        .iter()
+fn parse_input_to_grid(input: String) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
+    let mut grid = input
+        .split_terminator("\n")
         .map(|l| l.as_bytes().to_owned())
         .collect::<Vec<Vec<_>>>();
 
@@ -130,8 +110,8 @@ fn successors(node: &Coord, grid: &[Vec<u8>]) -> Vec<(Coord, usize)> {
 }
 
 /// Solves part 1 by scanning for single-thickness walls that can skipped along the shortest path.
-fn _part_1_by_finding_walls(lines: &[String]) -> Result<usize> {
-    let (grid, start, end) = parse_lines_to_grid(lines)?;
+fn _part_1_by_finding_walls(input: String) -> Result<usize> {
+    let (grid, start, end) = parse_input_to_grid(input)?;
 
     let Some((path, length)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
         return Err(anyhow!("Cannot find shortest path"));
