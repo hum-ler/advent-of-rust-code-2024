@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-const INPUT_FILE: &str = "inputs/day-12.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-12.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -17,7 +15,10 @@ fn part_1(input: String) -> Result<usize> {
 
     let regions = find_regions(&grid);
 
-    Ok(regions.iter().map(|r| r.area() * r.perimeter()).sum())
+    Ok(regions
+        .iter()
+        .map(|region| region.area() * region.perimeter())
+        .sum())
 }
 
 fn part_2(input: String) -> Result<usize> {
@@ -25,7 +26,10 @@ fn part_2(input: String) -> Result<usize> {
 
     let regions = find_regions(&grid);
 
-    Ok(regions.iter().map(|r| r.area() * r.sides()).sum())
+    Ok(regions
+        .iter()
+        .map(|region| region.area() * region.sides())
+        .sum())
 }
 
 /// Represents the border around a plot.
@@ -52,7 +56,7 @@ impl Default for Border {
 
 impl Border {
     /// Counts the number of directions that are true i.e. that require fencing.
-    pub fn sum(&self) -> usize {
+    pub fn size(&self) -> usize {
         self.north as usize + self.east as usize + self.south as usize + self.west as usize
     }
 }
@@ -90,7 +94,7 @@ impl Region {
     }
 
     pub fn perimeter(&self) -> usize {
-        self.plots.iter().map(|p| p.border.sum()).sum()
+        self.plots.iter().map(|plot| plot.border.size()).sum()
     }
 
     pub fn sides(&self) -> usize {
@@ -107,55 +111,58 @@ impl Region {
     ///
     /// Assumes that each border is in its default state.
     fn set_plot_borders(plots: &[Plot]) -> Vec<Plot> {
-        // Use a HashMap for quick lookup.
-        let mut hash_map: HashMap<Coord, Plot> = HashMap::new();
+        // Create a HashMap for quick lookup.
+        let mut plot_map: HashMap<Coord, Plot> = HashMap::new();
         for plot in plots {
-            hash_map.insert(plot.coord, *plot);
+            plot_map.insert(plot.coord, *plot);
         }
 
+        // By default, borders are in the true state.
+        //
+        // If 2 plots are touching each other, remove the border sides between them.
         for plot in plots {
             // N
-            if plot.coord.0 > 0 && hash_map.contains_key(&(plot.coord.0 - 1, plot.coord.1)) {
-                hash_map
+            if plot.coord.0 > 0 && plot_map.contains_key(&(plot.coord.0 - 1, plot.coord.1)) {
+                plot_map
                     .entry(plot.coord)
                     .and_modify(|p| p.border.north = false);
-                hash_map
+                plot_map
                     .entry((plot.coord.0 - 1, plot.coord.1))
                     .and_modify(|p| p.border.south = false);
             }
 
             // E
-            if hash_map.contains_key(&(plot.coord.0, plot.coord.1 + 1)) {
-                hash_map
+            if plot_map.contains_key(&(plot.coord.0, plot.coord.1 + 1)) {
+                plot_map
                     .entry(plot.coord)
                     .and_modify(|p| p.border.east = false);
-                hash_map
+                plot_map
                     .entry((plot.coord.0, plot.coord.1 + 1))
                     .and_modify(|p| p.border.west = false);
             }
 
             // S
-            if hash_map.contains_key(&(plot.coord.0 + 1, plot.coord.1)) {
-                hash_map
+            if plot_map.contains_key(&(plot.coord.0 + 1, plot.coord.1)) {
+                plot_map
                     .entry(plot.coord)
                     .and_modify(|p| p.border.south = false);
-                hash_map
+                plot_map
                     .entry((plot.coord.0 + 1, plot.coord.1))
                     .and_modify(|p| p.border.north = false);
             }
 
             // W
-            if plot.coord.1 > 0 && hash_map.contains_key(&(plot.coord.0, plot.coord.1 - 1)) {
-                hash_map
+            if plot.coord.1 > 0 && plot_map.contains_key(&(plot.coord.0, plot.coord.1 - 1)) {
+                plot_map
                     .entry(plot.coord)
                     .and_modify(|p| p.border.west = false);
-                hash_map
+                plot_map
                     .entry((plot.coord.0, plot.coord.1 - 1))
                     .and_modify(|p| p.border.east = false);
             }
         }
 
-        hash_map.values().copied().collect()
+        plot_map.values().copied().collect()
     }
 
     /// Counts the number of 90 degree corners in each plot border.
@@ -166,13 +173,13 @@ impl Region {
     fn outer_corners(&self) -> usize {
         self.plots
             .iter()
-            .map(|p| match p.border.sum() {
+            .map(|plot| match plot.border.size() {
                 4 => 4,
                 3 => 2,
-                2 if p.border.north && p.border.east => 1,
-                2 if p.border.east && p.border.south => 1,
-                2 if p.border.south && p.border.west => 1,
-                2 if p.border.west && p.border.north => 1,
+                2 if plot.border.north && plot.border.east => 1,
+                2 if plot.border.east && plot.border.south => 1,
+                2 if plot.border.south && plot.border.west => 1,
+                2 if plot.border.west && plot.border.north => 1,
                 _ => 0,
             })
             .sum()
@@ -182,20 +189,20 @@ impl Region {
     ///
     /// Only L-shape applies, each side must come from a different plot.
     fn inner_corners(&self) -> usize {
-        // Use a HashMap for quick lookup.
-        let mut hash_map: HashMap<Coord, Plot> = HashMap::new();
+        // Create a HashMap for quick lookup.
+        let mut plot_map: HashMap<Coord, Plot> = HashMap::new();
         for plot in &self.plots {
-            hash_map.insert(plot.coord, *plot);
+            plot_map.insert(plot.coord, *plot);
         }
 
         let mut corners = 0;
 
         for plot in &self.plots {
-            if plot.border.sum() == 0 {
+            if plot.border.size() == 0 {
                 continue;
             }
 
-            if plot.border.sum() == 4 {
+            if plot.border.size() == 4 {
                 continue;
             }
 
@@ -204,8 +211,8 @@ impl Region {
                 && !plot.border.north
                 && plot.coord.0 > 0
                 && plot.coord.1 > 0
-                && hash_map.contains_key(&(plot.coord.0 - 1, plot.coord.1 - 1))
-                && hash_map[&(plot.coord.0 - 1, plot.coord.1 - 1)].border.south
+                && plot_map.contains_key(&(plot.coord.0 - 1, plot.coord.1 - 1))
+                && plot_map[&(plot.coord.0 - 1, plot.coord.1 - 1)].border.south
             {
                 corners += 1;
             }
@@ -214,8 +221,8 @@ impl Region {
             if plot.border.north
                 && !plot.border.east
                 && plot.coord.0 > 0
-                && hash_map.contains_key(&(plot.coord.0 - 1, plot.coord.1 + 1))
-                && hash_map[&(plot.coord.0 - 1, plot.coord.1 + 1)].border.west
+                && plot_map.contains_key(&(plot.coord.0 - 1, plot.coord.1 + 1))
+                && plot_map[&(plot.coord.0 - 1, plot.coord.1 + 1)].border.west
             {
                 corners += 1;
             }
@@ -223,8 +230,8 @@ impl Region {
             // SE
             if plot.border.east
                 && !plot.border.south
-                && hash_map.contains_key(&(plot.coord.0 + 1, plot.coord.1 + 1))
-                && hash_map[&(plot.coord.0 + 1, plot.coord.1 + 1)].border.north
+                && plot_map.contains_key(&(plot.coord.0 + 1, plot.coord.1 + 1))
+                && plot_map[&(plot.coord.0 + 1, plot.coord.1 + 1)].border.north
             {
                 corners += 1;
             }
@@ -233,8 +240,8 @@ impl Region {
             if plot.border.south
                 && !plot.border.west
                 && plot.coord.1 > 0
-                && hash_map.contains_key(&(plot.coord.0 + 1, plot.coord.1 - 1))
-                && hash_map[&(plot.coord.0 + 1, plot.coord.1 - 1)].border.east
+                && plot_map.contains_key(&(plot.coord.0 + 1, plot.coord.1 - 1))
+                && plot_map[&(plot.coord.0 + 1, plot.coord.1 - 1)].border.east
             {
                 corners += 1;
             }
@@ -261,7 +268,7 @@ fn find_regions(grid: &[Vec<u8>]) -> Vec<Region> {
 
     let mut grid = grid
         .iter()
-        .map(|r| r.iter().map(|s| Some(*s)).collect())
+        .map(|row| row.iter().map(|symbol| Some(*symbol)).collect())
         .collect::<Vec<Vec<Option<_>>>>();
 
     for row in 0..row_count {
@@ -277,8 +284,11 @@ fn find_regions(grid: &[Vec<u8>]) -> Vec<Region> {
     regions
 }
 
+/// Fill the region by flooding, beginning at seed.
+///
+/// Returns all the [Coord]s that have been filled.
 fn flood_fill(
-    coord: Coord,
+    seed: Coord,
     orig_value: Option<u8>,
     new_value: Option<u8>,
     grid: &mut [Vec<Option<u8>>],
@@ -286,7 +296,7 @@ fn flood_fill(
     let row_count = grid.len();
     let col_count = grid.first().map_or(0, Vec::len);
 
-    let (row, col) = coord;
+    let (row, col) = seed;
     assert!(row < row_count);
     assert!(col < col_count);
 
@@ -295,10 +305,10 @@ fn flood_fill(
         return Vec::default();
     }
 
-    let mut coords = vec![coord];
-
-    // Fill this coord.
+    // Fill this Coord.
     grid[row][col] = new_value;
+
+    let mut coords = vec![seed];
 
     // Go 4-way.
     if row > 0 {

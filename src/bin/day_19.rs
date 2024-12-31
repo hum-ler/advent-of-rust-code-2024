@@ -1,10 +1,8 @@
 use anyhow::{anyhow, Result};
 use rand::{seq::SliceRandom, thread_rng};
 
-const INPUT_FILE: &str = "inputs/day-19.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-19.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -12,8 +10,6 @@ fn main() {
 }
 
 fn _part_1_example(input: String) -> Result<usize> {
-    // Is this a variant of coin change?
-
     // 1. Take the towels list and reduce it to unique patterns.
     //   "r, wr, b, g, bwu, rb, gb, br"  becomes  "r, wr, b, g, bwu"
     // 2. Since 'u' is only found in "bwu", any design with 'u' in it that cannot use "bwu" are out.
@@ -44,8 +40,6 @@ fn _part_1_example(input: String) -> Result<usize> {
 }
 
 fn part_1(input: String) -> Result<usize> {
-    // Is this a variant of coin change?
-
     // 1. Take the towels list and reduce it to unique patterns that includes 'u' ('r', 'g', 'w',
     //    'b' single-colors are available).
     // 2. For each design, find elements from 1. to substitute the 'u's (the hard part).
@@ -54,7 +48,7 @@ fn part_1(input: String) -> Result<usize> {
     let (patterns, designs) = parse_input(&input)?;
 
     let mut patterns = reduce_input_patterns(&patterns);
-    patterns.sort_by_key(|p| p.len());
+    patterns.sort_by_key(|pattern| pattern.len());
 
     let mut possible_designs = 0usize;
 
@@ -85,7 +79,7 @@ fn part_1(input: String) -> Result<usize> {
             }
 
             if !reduction.contains("u") {
-                retries.remove(retries.iter().position(|r| r == design).unwrap());
+                retries.remove(retries.iter().position(|pattern| pattern == design).unwrap());
                 possible_designs += 1;
             }
         }
@@ -99,13 +93,13 @@ fn part_2(_input: String) -> Result<usize> {
 }
 
 fn parse_input(input: &str) -> Result<(Vec<&str>, Vec<&str>)> {
-    let input = input.trim().split("\n\n").collect::<Vec<_>>();
+    let input = input.trim().split_terminator("\n\n").collect::<Vec<_>>();
     if input.len() != 2 {
         return Err(anyhow!("Cannot parse input"));
     }
 
-    let towels = input[0].split(", ").collect::<Vec<_>>();
-    let designs = input[1].split("\n").collect::<Vec<_>>();
+    let towels = input[0].split_terminator(", ").collect::<Vec<_>>();
+    let designs = input[1].split_terminator("\n").collect::<Vec<_>>();
 
     Ok((towels, designs))
 }
@@ -114,7 +108,7 @@ fn parse_input(input: &str) -> Result<(Vec<&str>, Vec<&str>)> {
 fn reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
     let mut patterns = patterns
         .iter()
-        .filter(|p| p.contains("u"))
+        .filter(|pattern| pattern.contains("u"))
         .collect::<Vec<_>>();
     patterns.sort_by_key(|p| p.len());
 
@@ -124,10 +118,10 @@ fn reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
 
     // By inspection, the remaining patterns have 1 to 4 'u's in them, so let's separate them first.
     let mut patterns_by_u_count: Vec<Vec<&str>> = vec![Vec::default(); 4];
-    patterns.iter().for_each(|p| {
-        let index = p.as_bytes().iter().filter(|b| **b == b'u').count() - 1;
+    patterns.iter().for_each(|pattern| {
+        let index = pattern.as_bytes().iter().filter(|b| **b == b'u').count() - 1;
 
-        patterns_by_u_count[index].push(*p);
+        patterns_by_u_count[index].push(*pattern);
     });
 
     // Those with only 1 'u' is simple.

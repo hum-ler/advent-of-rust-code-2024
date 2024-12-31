@@ -3,8 +3,6 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-const INPUT_FILE: &str = "inputs/day-14.txt";
-
 const INPUT_GRID_SIZE: Vector2 = Vector2 { x: 101, y: 103 };
 
 const TIME_ELAPSED: i32 = 100;
@@ -12,7 +10,7 @@ const TIME_ELAPSED: i32 = 100;
 const _VERTICAL_LINE_LENGTH: i32 = 20;
 
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-14.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -32,7 +30,7 @@ fn part_1_with_grid_size(input: String, grid_size: &Vector2) -> Result<usize> {
 
     let final_positions = robots
         .iter()
-        .map(|r| r.traverse(TIME_ELAPSED, grid_size))
+        .map(|robot| robot.traverse(TIME_ELAPSED, grid_size))
         .collect::<Vec<_>>();
 
     let populations = find_quadrant_populations(&final_positions, grid_size);
@@ -41,16 +39,14 @@ fn part_1_with_grid_size(input: String, grid_size: &Vector2) -> Result<usize> {
 }
 
 fn part_2_with_grid_size(input: String, grid_size: &Vector2) -> Result<i32> {
-    // This is a stupid puzzle. What is the shape of the tree? Where is it
-    // positioned? Is it solid or hollow? How big is it? Must each and every
-    // robot form part of tree?
+    // This is a stupid puzzle. What is the shape of the tree? Where is it positioned? Is it solid
+    // or hollow? How big is it? Must each and every robot form part of tree?
     //
-    // Based on hints from the subreddit, the damn tree is a solid arrangement.
-    // We can search for a vertical or a diagonal linear arrangement of robots.
+    // According to the subreddit, the tree is a solid arrangement. We can search for a vertical or
+    // a diagonal linear arrangement of robots.
     //
-    // Alternatively, assuming the tree falls entirely into 1 quadrant, we can
-    // use part 1 to check if one of the quadrants has way more robots that the
-    // other quadrants.
+    // Alternatively, assuming the tree falls entirely into 1 quadrant, we can use part 1 to check
+    // if one quadrant has way higher concentration of robots compared to other quadrants.
 
     let robots = parse_input_to_robots(input)?;
     let half_of_robots = robots.len() / 2;
@@ -60,9 +56,10 @@ fn part_2_with_grid_size(input: String, grid_size: &Vector2) -> Result<i32> {
     loop {
         time += 1;
 
+        // We can optimize this a lot by keeping the positions and stepping through the traversal.
         let positions = robots
             .iter()
-            .map(|r| r.traverse(time, grid_size))
+            .map(|robot| robot.traverse(time, grid_size))
             .collect::<Vec<_>>();
 
         let populations = find_quadrant_populations(&positions, grid_size);
@@ -118,7 +115,7 @@ impl FromStr for Robot {
 }
 
 impl Robot {
-    /// Moves the robot [duration] times.
+    /// Moves the robot duration times.
     pub fn traverse(&self, duration: i32, grid_size: &Vector2) -> Vector2 {
         let mut x = (self.p.x + duration * self.v.x) % grid_size.x;
         if x.is_negative() {

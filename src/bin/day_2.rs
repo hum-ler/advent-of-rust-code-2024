@@ -1,11 +1,9 @@
-use std::{num::ParseIntError, str::FromStr};
+use std::str::FromStr;
 
 use anyhow::Result;
 
-const INPUT_FILE: &str = "inputs/day-2.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-2.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -14,26 +12,23 @@ fn main() {
 
 fn part_1(input: String) -> Result<usize> {
     Ok(parse_input_into_reports(input)?
-        .iter()
-        .filter(|r| r.safe)
+        .into_iter()
+        .filter(Report::is_safe)
         .count())
 }
 
 fn part_2(input: String) -> Result<usize> {
-    Ok(parse_input_into_dampened_reports(input)?
-        .iter()
-        .filter(|r| r.safe)
+    Ok(parse_input_into_reports(input)?
+        .into_iter()
+        .filter(Report::is_safe_with_dampener)
         .count())
 }
 
-/// Report for part 1.
-struct Report {
-    _data: Vec<u8>,
-    safe: bool,
-}
+#[derive(Clone)]
+struct Report(Vec<u8>);
 
 impl FromStr for Report {
-    type Err = ParseIntError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         let data = s
@@ -41,88 +36,52 @@ impl FromStr for Report {
             .map(str::parse::<u8>)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let safe = is_safe_data(&data);
-
-        Ok(Self { _data: data, safe })
+        Ok(Self(data))
     }
 }
 
-/// Checks for safe data.
-fn is_safe_data(data: &[u8]) -> bool {
-    assert!(data.len() > 1);
+impl Report {
+    fn is_safe(&self) -> bool {
+        assert!(self.0.len() > 1);
 
-    data.windows(2).all(is_safe_increase) || data.windows(2).all(is_safe_decrease)
-}
-
-fn is_safe_increase(pair: &[u8]) -> bool {
-    assert_eq!(pair.len(), 2);
-
-    pair[1] > pair[0] && pair[1] - pair[0] <= 3
-}
-
-fn is_safe_decrease(pair: &[u8]) -> bool {
-    assert_eq!(pair.len(), 2);
-
-    pair[1] < pair[0] && pair[0] - pair[1] <= 3
-}
-
-fn parse_input_into_reports(lines: String) -> Result<Vec<Report>, ParseIntError> {
-    lines.split_terminator("\n").map(Report::from_str).collect()
-}
-
-/// Modified report for part 2.
-struct DampenedReport {
-    _data: Vec<u8>,
-    safe: bool,
-    _removed: Option<usize>,
-}
-
-impl FromStr for DampenedReport {
-    type Err = ParseIntError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let data = s
-            .split_whitespace()
-            .map(str::parse::<u8>)
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let (safe, removed) = is_safe_data_with_dampener(&data);
-
-        Ok(Self {
-            _data: data,
-            safe,
-            _removed: removed,
-        })
-    }
-}
-
-/// Checks for safe data, with allowance to remove one element.
-///
-/// Returns whether the data is safe, and the index of the element removed (if applicable).
-fn is_safe_data_with_dampener(data: &[u8]) -> (bool, Option<usize>) {
-    // Check the simple case first.
-    if is_safe_data(data) {
-        return (true, None);
+        self.0.windows(2).all(Report::is_safe_increase)
+            || self.0.windows(2).all(Report::is_safe_decrease)
     }
 
-    // Data looks short enough to just cycle through removals.
-    for i in 0..data.len() {
-        let mut data = Vec::from(data);
-        data.remove(i);
-
-        if is_safe_data(&data) {
-            return (true, Some(i));
+    fn is_safe_with_dampener(&self) -> bool {
+        // Check the simple case first.
+        if self.is_safe() {
+            return true;
         }
+
+        // Data looks short enough to just cycle through removals.
+        for i in 0..self.0.len() {
+            let mut report = self.clone();
+            report.0.remove(i);
+
+            if report.is_safe() {
+                return true;
+            }
+        }
+
+        false
     }
 
-    (false, None)
+    fn is_safe_increase(pair: &[u8]) -> bool {
+        assert_eq!(pair.len(), 2);
+
+        pair[1] > pair[0] && pair[1] - pair[0] <= 3
+    }
+
+    fn is_safe_decrease(pair: &[u8]) -> bool {
+        assert_eq!(pair.len(), 2);
+
+        pair[1] < pair[0] && pair[0] - pair[1] <= 3
+    }
 }
 
-fn parse_input_into_dampened_reports(input: String) -> Result<Vec<DampenedReport>, ParseIntError> {
-    input
-        .split_terminator("\n")
-        .map(DampenedReport::from_str)
-        .collect()
+fn parse_input_into_reports(lines: String) -> Result<Vec<Report>> {
+    lines.split_terminator("\n").map(Report::from_str).collect()
 }
 
 #[cfg(test)]

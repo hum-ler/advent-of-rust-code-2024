@@ -1,10 +1,8 @@
 use anyhow::Result;
 use itertools::Itertools;
 
-const INPUT_FILE: &str = "inputs/day-10.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-10.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -12,7 +10,7 @@ fn main() {
 }
 
 fn part_1(input: String) -> Result<usize> {
-    let (grid, grid_size) = parse_input_to_grid(&input);
+    let (grid, grid_size) = parse_input_to_grid(input);
 
     Ok(find_trailheads(&grid)
         .iter()
@@ -21,7 +19,7 @@ fn part_1(input: String) -> Result<usize> {
 }
 
 fn part_2(input: String) -> Result<usize> {
-    let (grid, grid_size) = parse_input_to_grid(&input);
+    let (grid, grid_size) = parse_input_to_grid(input);
 
     Ok(find_trailheads(&grid)
         .iter()
@@ -36,16 +34,10 @@ struct Node {
     col: usize,
 }
 
-impl Node {
-    pub fn new(value: u8, row: usize, col: usize) -> Self {
-        Self { value, row, col }
-    }
-}
-
 type GridSize = (usize, usize);
 
-/// Parses [input] into a grid of [Node]s, and the row- and column counts.
-fn parse_input_to_grid(input: &str) -> (Vec<Vec<Node>>, GridSize) {
+/// Parses input into a grid of [Node]s, and the row- and column counts.
+fn parse_input_to_grid(input: String) -> (Vec<Vec<Node>>, GridSize) {
     let input = input.split_terminator("\n").collect::<Vec<_>>();
     let row_count = input.len();
     let col_count = input.first().map_or(0, |s| s.len());
@@ -57,7 +49,11 @@ fn parse_input_to_grid(input: &str) -> (Vec<Vec<Node>>, GridSize) {
             line.as_bytes()
                 .iter()
                 .enumerate()
-                .map(|(col, byte)| Node::new(byte - b'0', row, col))
+                .map(|(col, byte)| Node {
+                    value: byte - b'0',
+                    row,
+                    col,
+                })
                 .collect()
         })
         .collect();
@@ -72,7 +68,7 @@ fn find_trailheads(grid: &[Vec<Node>]) -> Vec<&Node> {
         .collect()
 }
 
-/// Finds adjacent [Node]s that have value 1 greater than [node].
+/// Finds adjacent [Node]s that have value 1 greater than node.
 fn find_follow_up_nodes<'a>(
     node: &Node,
     grid: &'a [Vec<Node>],
@@ -107,14 +103,13 @@ fn find_follow_up_nodes<'a>(
     follow_up_nodes
 }
 
-/// Finds all the end [Node]s (i.e. value = 9) that can be reached from [trailhead].
+/// Finds all the end [Node]s (i.e. value = 9) that can be reached from trailhead.
 ///
 /// If the same end node can be reached via multiple paths, it will be repeated in the result.
 fn find_ends<'a>(trailhead: &Node, grid: &'a [Vec<Node>], grid_size: &GridSize) -> Vec<&'a Node> {
     let mut ends: Vec<&Node> = Vec::default();
 
     let mut trail_check = find_follow_up_nodes(trailhead, grid, grid_size);
-
     while let Some(node) = trail_check.pop() {
         if node.value == 9 {
             ends.push(node);

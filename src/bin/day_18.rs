@@ -1,14 +1,12 @@
 use anyhow::{anyhow, Result};
 use pathfinding::prelude::dijkstra;
 
-const INPUT_FILE: &str = "inputs/day-18.txt";
-
 const INPUT_GRID_SIZE: usize = 71;
 
 const INPUT_BYTE_COUNT: usize = 1024;
 
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-18.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -28,8 +26,8 @@ fn part_1_with_sizes(input: String, grid_size: usize, input_size: Option<usize>)
 
     let Some((shortest_path, _)) = dijkstra(
         &(0, 0),
-        |n| find_successors(n, &grid, grid_size),
-        |n| *n == (grid_size - 1, grid_size - 1),
+        |node| find_successors(node, &grid, grid_size),
+        |node| *node == (grid_size - 1, grid_size - 1),
     ) else {
         return Err(anyhow!("Cannot find shortest path"));
     };
@@ -47,8 +45,8 @@ fn part_2_with_sizes(input: String, grid_size: usize, skip_checks: usize) -> Res
 
 /// Parses input into a grid of free space and "bytes".
 ///
-/// Only the first [input_size] lines (terminated by '\n') in [input] are processed in creating the
-/// grid. If [input_size] is None, then the entire [input] is used.
+/// Only the first input_size lines (terminated by '\n') in input are processed when creating the
+/// grid. If input_size is None, then the entire input will be used.
 fn parse_input_to_grid(
     input: String,
     grid_size: usize,
@@ -60,19 +58,19 @@ fn parse_input_to_grid(
 
     let input_size = input_size.unwrap_or(input.len());
 
-    input[0..input_size].iter().try_for_each(|b| {
-        let b_vec = b
-            .split(",")
+    input[0..input_size].iter().try_for_each(|byte| {
+        let pos = byte
+            .split_terminator(",")
             .map(str::parse::<usize>)
             .collect::<Result<Vec<usize>, _>>()?;
-        if b_vec.len() != 2 {
-            return Err(anyhow!("Cannot parse input: {}", b));
+        if pos.len() != 2 {
+            return Err(anyhow!("Cannot parse input: {}", byte));
         };
 
-        let row = b_vec[1];
-        let col = b_vec[0];
+        let row = pos[1];
+        let col = pos[0];
         if row >= grid_size || col >= grid_size {
-            return Err(anyhow!("Invalid input, out of bounds: {}", b));
+            return Err(anyhow!("Invalid input, out of bounds: {}", row));
         }
 
         grid[row][col] = b'#';
@@ -85,7 +83,7 @@ fn parse_input_to_grid(
 
 type Node = (usize, usize);
 
-/// Finds nodes that are connected to [node].
+/// Finds [Node]s that are connected to node.
 fn find_successors(node: &Node, grid: &[Vec<u8>], grid_size: usize) -> Vec<(Node, u32)> {
     let mut nodes = Vec::default();
 
@@ -117,19 +115,19 @@ fn find_successors(node: &Node, grid: &[Vec<u8>], grid_size: usize) -> Vec<(Node
 fn parse_input_to_nodes(input: String, grid_size: usize) -> Result<Vec<Node>> {
     input
         .split_terminator("\n")
-        .map(|b| {
-            let b_vec = b
-                .split(",")
+        .map(|byte| {
+            let pos = byte
+                .split_terminator(",")
                 .map(str::parse::<usize>)
                 .collect::<Result<Vec<usize>, _>>()?;
-            if b_vec.len() != 2 {
-                return Err(anyhow!("Cannot parse input: {}", b));
+            if pos.len() != 2 {
+                return Err(anyhow!("Cannot parse input: {}", byte));
             };
 
-            let row = b_vec[1];
-            let col = b_vec[0];
+            let row = pos[1];
+            let col = pos[0];
             if row >= grid_size || col >= grid_size {
-                return Err(anyhow!("Invalid input, out of bounds: {}", b));
+                return Err(anyhow!("Invalid input, out of bounds: {}", byte));
             }
 
             Ok((col, row))
@@ -137,10 +135,10 @@ fn parse_input_to_nodes(input: String, grid_size: usize) -> Result<Vec<Node>> {
         .collect()
 }
 
-/// Finds the first node in [nodes] that prevents any path from (0, 0) to
+/// Finds the first node in nodes that prevents any path from (0, 0) to
 /// ([grid_size] - 1, [grid_size] - 1).
 ///
-/// Skips checking for paths for the first [skip_checks] nodes.
+/// Skips over checking for paths for the first skip_checks nodes.
 fn first_blocker(nodes: &[Node], grid_size: usize, skip_checks: usize) -> Result<Node> {
     let mut grid = vec![vec![b'.'; grid_size]; grid_size];
 
@@ -156,8 +154,8 @@ fn first_blocker(nodes: &[Node], grid_size: usize, skip_checks: usize) -> Result
         // smartest choice here.
         if dijkstra(
             &(0, 0),
-            |n| find_successors(n, &grid, grid_size),
-            |n| *n == (grid_size - 1, grid_size - 1),
+            |node| find_successors(node, &grid, grid_size),
+            |node| *node == (grid_size - 1, grid_size - 1),
         )
         .is_none()
         {

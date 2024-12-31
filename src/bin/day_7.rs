@@ -2,10 +2,8 @@ use std::{num::ParseIntError, str::FromStr};
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-7.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-7.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -52,16 +50,16 @@ impl FromStr for Equation {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let input = s.split(": ").collect::<Vec<&str>>();
+        let input = s.split_terminator(": ").collect::<Vec<_>>();
         if input.len() != 2 {
             return Err(anyhow!("Cannot split input : {}", s));
         }
 
         let test_value = input[0].parse::<u64>()?;
         let operands = input[1]
-            .split(" ")
-            .map(|o| o.parse::<u64>())
-            .collect::<Result<Vec<u64>, _>>()?;
+            .split_terminator(" ")
+            .map(|operand| operand.parse::<u64>())
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(Self {
             test_value,
@@ -73,9 +71,9 @@ impl FromStr for Equation {
 impl Equation {
     /// Searches for the first sequence of [Operator]s that returns the test value.
     ///
-    /// Returns `Ok(None)` if no such sequence is found.
+    /// Returns Ok(None) if no such sequence is found.
     ///
-    /// Set [allow_concatenate] to true to allow [Operator::Concatenate] to appear in the sequence
+    /// Set allow_concatenate to true to allow [Operator::Concatenate] to appear in the sequence
     /// (as in part 2). Otherwise, only [Operator::Add] and [Operator::Multiply] will be used.
     pub fn operators(&self, allow_concatenate: bool) -> Result<Option<Vec<Operator>>> {
         assert!(self.operands.len() >= 2);
@@ -136,8 +134,8 @@ impl Equation {
     }
 }
 
-fn parse_input_to_equations(lines: String) -> Result<Vec<Equation>> {
-    lines
+fn parse_input_to_equations(input: String) -> Result<Vec<Equation>> {
+    input
         .split_terminator("\n")
         .map(Equation::from_str)
         .collect()

@@ -5,10 +5,8 @@ use std::{
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-24.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-24.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -53,32 +51,33 @@ fn part_2(input: String) -> Result<String> {
 
     let (mut resolved_signals, mut unresolved_signals) = parse_input_to_signals(&input)?;
 
+    // // Remove all the correct signals first.
     // let mut _signals: HashSet<Operation> =
     //     HashSet::from_iter(unresolved_signals.clone().into_values());
     // let _substitutions = _remove_correct_signals(&mut _signals);
 
-    // From here, there are 3 "-> z"s that are not XORs, hence must be incorrect:
-    // - z15
-    // - z05
-    // - z20
-    // There are also correspondingly 3 XORs that do not involve x and y:
-    // - fvm XOR mvv
-    // - bhw XOR sth
-    // - gcs XOR hdc
+    // // From here, there are 3 "-> z"s that are not XORs, hence must be incorrect:
+    // // - z15
+    // // - z05
+    // // - z20
+    // // There are also correspondingly 3 XORs that do not involve x and y:
+    // // - fvm XOR mvv
+    // // - bhw XOR sth
+    // // - gcs XOR hdc
 
-    // Hence the swaps:
-    // - z15 <-> htp
-    // - z05 <-> dkr
-    // - z20 <-> hhh
+    // // Hence the swaps:
+    // // - z15 <-> htp
+    // // - z05 <-> dkr
+    // // - z20 <-> hhh
 
-    // z45 is equivalent to c45, which clears the following:
-    // - x44 AND y44 -> kbb
-    // - gqg AND pfh -> khw
-    // - kbb OR khw -> z45
+    // // z45 is equivalent to c45, which clears the following:
+    // // - x44 AND y44 -> kbb
+    // // - gqg AND pfh -> khw
+    // // - kbb OR khw -> z45
 
-    // Checking z36, we need to swap: rhv <-> ggk.
+    // // Checking z36, we need to swap: rhv <-> ggk.
 
-    // Combining everything: dkr,ggk,hhh,htp,rhv,z05,z15,z20.
+    // // Combining everything: dkr,ggk,hhh,htp,rhv,z05,z15,z20.
 
     let swaps = [
         ("z15", "htp"),
@@ -142,19 +141,26 @@ impl<'a> TryFrom<&'a str> for Operation<'a> {
     type Error = anyhow::Error;
 
     fn try_from(value: &'a str) -> std::result::Result<Self, Self::Error> {
-        let [input_1, operator, input_2, arrow, signal] = value.split(" ").collect::<Vec<_>>()[..]
+        let [input_1, operator, input_2, arrow, signal] =
+            value.split_terminator(" ").collect::<Vec<_>>()[..]
         else {
             return Err(anyhow!("Cannot split value: {}", value));
         };
 
         assert_eq!(arrow, "->");
 
-        Ok(Self::new(input_1, input_2, operator, signal))
+        Ok(Self {
+            input_1,
+            input_2,
+            operator,
+            output: signal,
+        })
     }
 }
 
 impl Display for Operation<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Always sort the inputs when outputting.
         if self.input_1 < self.input_2 {
             f.write_fmt(format_args!(
                 "{} {} {} -> {}",
@@ -169,26 +175,17 @@ impl Display for Operation<'_> {
     }
 }
 
-impl<'a> Operation<'a> {
-    fn new(input_1: &'a str, input_2: &'a str, operator: &'a str, output: &'a str) -> Self {
-        Self {
-            input_1,
-            input_2,
-            operator,
-            output,
-        }
-    }
-
+impl Operation<'_> {
     /// Matches this [Operation] against the given arguments.
     ///
-    /// [operator] and [output] (if given) must match exactly.
+    /// operator and output (if given) must match exactly.
     ///
-    /// [operand_1] and [operand_2] will match either [operand_1] == [input_1] and
-    /// [operand_2] == [input_2] as a pair, or the other way around ([operand_1] == [input_2] and
-    /// [operand_2] == [input_1]).
+    /// operand_1 and operand_2 will match either ((operand_1 == input_1) and
+    /// (operand_2 == input_2)) as a pair, or the other way around ((operand_1 == input_2) and
+    /// (operand_2 == input_1)).
     ///
-    /// You may also just set one of [operand_1] or [operand_2] to None in order to match either
-    /// [input_1] or [input_2].
+    /// You may also just set one of operand_1 or operand_2 to None in order to match either
+    /// input_1 or input_2.
     fn _matches(
         &self,
         operand_1: Option<&str>,
@@ -226,43 +223,49 @@ impl<'a> Operation<'a> {
 type ResolvedSignals<'a> = HashMap<&'a str, u64>;
 type UnresolvedSignals<'a> = HashMap<&'a str, Operation<'a>>;
 
-/// Parses [input] into resolved values ([ResolvedSignals]) and unresolved [Operation]s
+/// Parses input into resolved values ([ResolvedSignals]) and unresolved [Operation]s
 /// ([UnresolvedSignals]).
 fn parse_input_to_signals(input: &str) -> Result<(ResolvedSignals, UnresolvedSignals)> {
     let mut resolved_signals = HashMap::new();
     let mut unresolved_signals = HashMap::new();
 
-    let [resolved_section, unresolved_section] = input.split("\n\n").collect::<Vec<_>>()[..] else {
+    let [resolved_section, unresolved_section] =
+        input.split_terminator("\n\n").collect::<Vec<_>>()[..]
+    else {
         return Err(anyhow!("Cannot split input into sections"));
     };
 
-    resolved_section.split("\n").try_for_each(|line| {
-        let [signal, value] = line.split(": ").collect::<Vec<_>>()[..] else {
-            return Err(anyhow!("Cannot split resolved line: {}", line));
-        };
+    resolved_section
+        .split_terminator("\n")
+        .try_for_each(|line| {
+            let [signal, value] = line.split_terminator(": ").collect::<Vec<_>>()[..] else {
+                return Err(anyhow!("Cannot split resolved line: {}", line));
+            };
 
-        resolved_signals.insert(signal, value.parse::<u64>()?);
+            resolved_signals.insert(signal, value.parse::<u64>()?);
 
-        Ok(())
-    })?;
+            Ok(())
+        })?;
 
-    unresolved_section.split("\n").try_for_each(|line| {
-        let operation = Operation::try_from(line)?;
+    unresolved_section
+        .split_terminator("\n")
+        .try_for_each(|line| {
+            let operation = Operation::try_from(line)?;
 
-        unresolved_signals.insert(operation.output, operation);
+            unresolved_signals.insert(operation.output, operation);
 
-        Ok::<_, anyhow::Error>(())
-    })?;
+            Ok::<_, anyhow::Error>(())
+        })?;
 
     Ok((resolved_signals, unresolved_signals))
 }
 
-/// Assembles the bits (keyed by the elements of [signal_keys] into [resolved_signals]), and parses
-/// the number represented by the bits.
+/// Assembles the bits (keyed by the elements of signal_keys into resolved_signals), and parses the
+/// number represented by the bits.
 ///
-/// [signal_keys] must be in the correct order (from most significant bit to least significant bit).
+/// signal_keys must be in the correct order (from most significant bit to least significant bit).
 ///
-/// Returns `Ok(None)` if not all signals are resolved yet.
+/// Returns Ok(None) if not all signals are resolved yet.
 fn bits_to_number(
     signal_keys: &Vec<&str>,
     resolved_signals: &ResolvedSignals,
@@ -274,11 +277,11 @@ fn bits_to_number(
                 return Err(anyhow!("{} not resolved, short-circuiting...", signal));
             }
 
-            Ok(acc + resolved_signals[signal].to_string().as_str())
+            Ok(acc + &resolved_signals[signal].to_string())
         });
 
     if let Ok(bit_string) = bit_string {
-        let value = u64::from_str_radix(bit_string.as_str(), 2);
+        let value = u64::from_str_radix(&bit_string, 2);
 
         if let Ok(value) = value {
             return Ok(Some(value));
@@ -294,10 +297,10 @@ fn bits_to_number(
     Ok(None)
 }
 
-/// Attempt to resolve the values of signal inside [unresolved_signals].
+/// Attempt to resolve the values of signal inside unresolved_signals.
 ///
-/// If successfully resolved, the signal will be removed from [unresolved_signals] and added to
-/// [resolved_signals].
+/// If successfully resolved, the signal will be removed from unresolved_signals and added to
+/// resolved_signals.
 fn resolve<'a>(
     unresolved_signals: &mut UnresolvedSignals<'a>,
     resolved_signals: &mut ResolvedSignals<'a>,
@@ -337,7 +340,7 @@ fn resolve<'a>(
     });
 }
 
-/// Retrieves the list of keys in [hash_map] that start with [letter].
+/// Retrieves the list of keys in hash_map that start with letter.
 ///
 /// The returned list is sorted in the order of most significant bit to least significant bit.
 fn find_signals_starting_with_letter<'a, T>(
@@ -358,7 +361,7 @@ fn find_signals_starting_with_letter<'a, T>(
     signals
 }
 
-/// Removes all the "expected" signals from [signals], leaving behind the rest that requires closer
+/// Removes all the "expected" signals from signals, leaving behind the rest that requires closer
 /// scrutiny.
 ///
 /// Returns the map of deciphered signals to encoded signals.

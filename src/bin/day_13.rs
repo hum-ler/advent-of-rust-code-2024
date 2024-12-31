@@ -3,10 +3,8 @@ use std::str::FromStr;
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-const INPUT_FILE: &str = "inputs/day-13.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-13.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -14,13 +12,13 @@ fn main() {
 }
 
 fn part_1(input: String) -> Result<u64> {
-    let machines = parse_input_into_machines(&input)?;
+    let machines = parse_input_into_machines(input)?;
 
     Ok(machines.iter().filter_map(ClawMachine::cost).sum())
 }
 
 fn part_2(input: String) -> Result<u64> {
-    let machines = parse_input_into_machines(&input)?;
+    let machines = parse_input_into_machines(input)?;
 
     // Add 10000000000000 to prize values.
     let machines = machines
@@ -120,12 +118,8 @@ impl ClawMachine {
     }
 }
 
-fn parse_input_into_machines(input: &str) -> Result<Vec<ClawMachine>> {
-    input
-        .trim()
-        .split("\n\n")
-        .map(ClawMachine::from_str)
-        .collect()
+fn parse_input_into_machines(input: String) -> Result<Vec<ClawMachine>> {
+    input.split_terminator("\n\n").map(ClawMachine::from_str).collect()
 }
 
 #[cfg(test)]

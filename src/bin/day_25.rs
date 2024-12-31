@@ -2,10 +2,8 @@ use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-25.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-25.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -13,7 +11,7 @@ fn main() {
 }
 
 fn part_1(input: String) -> Result<usize> {
-    let (locks, keys) = parse_input_into_locks_and_keys(&input)?;
+    let (locks, keys) = parse_input_into_locks_and_keys(input)?;
 
     Ok(locks
         .iter()
@@ -44,8 +42,8 @@ impl FromStr for Lock {
             .fold([0, 0, 0, 0, 0], |acc, line| {
                 let mut acc = acc;
 
-                line.as_bytes().iter().enumerate().for_each(|(col, b)| {
-                    if *b == b'#' {
+                line.as_bytes().iter().enumerate().for_each(|(col, byte)| {
+                    if *byte == b'#' {
                         acc[col] += 1;
                     }
                 });
@@ -76,8 +74,8 @@ impl FromStr for Key {
                 .fold([0, 0, 0, 0, 0], |acc, line| {
                     let mut acc = acc;
 
-                    line.as_bytes().iter().enumerate().for_each(|(col, b)| {
-                        if *b == b'#' {
+                    line.as_bytes().iter().enumerate().for_each(|(col, byte)| {
+                        if *byte == b'#' {
                             acc[col] += 1;
                         }
                     });
@@ -99,13 +97,13 @@ impl Key {
     }
 }
 
-fn parse_input_into_locks_and_keys(input: &str) -> Result<(Vec<Lock>, Vec<Key>)> {
+fn parse_input_into_locks_and_keys(input: String) -> Result<(Vec<Lock>, Vec<Key>)> {
     let mut locks = Vec::default();
     let mut keys = Vec::default();
 
     let segments = input.split_terminator("\n\n").collect::<Vec<_>>();
 
-    segments.iter().try_for_each(|s| match s {
+    segments.iter().try_for_each(|segment| match segment {
         s if s.starts_with("#") => {
             locks.push(Lock::from_str(s)?);
 
@@ -116,7 +114,7 @@ fn parse_input_into_locks_and_keys(input: &str) -> Result<(Vec<Lock>, Vec<Key>)>
 
             Ok(())
         }
-        _ => Err(anyhow!("Cannot parse segment: {}", s)),
+        _ => Err(anyhow!("Cannot parse segment: {}", segment)),
     })?;
 
     Ok((locks, keys))

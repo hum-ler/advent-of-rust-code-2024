@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-9.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-9.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -11,7 +9,7 @@ fn main() {
 }
 
 fn part_1(input: String) -> Result<usize> {
-    let disk = parse_disk_map_to_disk(&input);
+    let disk = parse_disk_map_to_disk(input);
 
     let disk = compact(disk)?;
 
@@ -19,7 +17,7 @@ fn part_1(input: String) -> Result<usize> {
 }
 
 fn part_2(input: String) -> Result<usize> {
-    let blocks = parse_disk_map_to_contiguous_blocks(&input);
+    let blocks = parse_disk_map_to_contiguous_blocks(input);
 
     let blocks = compact_contiguous_blocks(blocks)?;
 
@@ -29,12 +27,12 @@ fn part_2(input: String) -> Result<usize> {
     Ok(checksum(&disk))
 }
 
-fn parse_disk_map_to_disk(input: &str) -> Vec<Option<usize>> {
+fn parse_disk_map_to_disk(input: String) -> Vec<Option<usize>> {
     input
         .bytes()
         .enumerate()
         .flat_map(|(id, size)| {
-            assert!(size >= b'0');
+            assert!(size.is_ascii_digit());
 
             let size = (size - b'0') as usize;
 
@@ -49,37 +47,12 @@ fn parse_disk_map_to_disk(input: &str) -> Vec<Option<usize>> {
         .collect()
 }
 
-// [Improved by Gemini with Clippy]
-fn _gemini_parse_disk_map_to_disk(input: &str) -> Result<Vec<Option<usize>>> {
-    let mut disk_map = Vec::new();
-    let mut file_id = 0;
-
-    for (i, byte) in input.bytes().enumerate() {
-        if !byte.is_ascii_digit() {
-            return Err(anyhow!("Invalid character at position {}", i));
-        }
-
-        let size = (byte - b'0') as usize;
-
-        if i % 2 == 0 {
-            // File
-            disk_map.extend(std::iter::repeat(Some(file_id)).take(size));
-            file_id += 1;
-        } else {
-            // Free space
-            disk_map.extend(std::iter::repeat(None).take(size));
-        }
-    }
-
-    Ok(disk_map)
-}
-
 fn compact(mut disk: Vec<Option<usize>>) -> Result<Vec<Option<usize>>> {
     assert!(!disk.is_empty());
 
     for head in 0..disk.len() {
         if disk[head].is_none() {
-            let Some(tail) = disk.iter().rposition(|e| e.is_some()) else {
+            let Some(tail) = disk.iter().rposition(|block| block.is_some()) else {
                 return Err(anyhow!("Cannot locate last file block"));
             };
 
@@ -97,7 +70,7 @@ fn compact(mut disk: Vec<Option<usize>>) -> Result<Vec<Option<usize>>> {
 fn checksum(disk: &[Option<usize>]) -> usize {
     disk.iter()
         .enumerate()
-        .map(|(pos, id)| if let Some(id) = id { id * pos } else { 0 })
+        .map(|(pos, id)| id.map_or(0, |id| id * pos))
         .sum()
 }
 
@@ -155,12 +128,12 @@ impl ContiguousBlock {
     }
 }
 
-fn parse_disk_map_to_contiguous_blocks(input: &str) -> Vec<ContiguousBlock> {
+fn parse_disk_map_to_contiguous_blocks(input: String) -> Vec<ContiguousBlock> {
     input
         .bytes()
         .enumerate()
         .filter_map(|(id, size)| {
-            assert!(size >= b'0');
+            assert!(size.is_ascii_digit());
 
             let size = (size - b'0') as usize;
 
@@ -182,16 +155,15 @@ fn parse_disk_map_to_contiguous_blocks(input: &str) -> Vec<ContiguousBlock> {
 fn compact_contiguous_blocks(mut blocks: Vec<ContiguousBlock>) -> Result<Vec<ContiguousBlock>> {
     let Some(largest_id) = blocks
         .iter()
-        .filter(|b| b.is_file())
-        .filter_map(|b| b.id)
-        .max_by(|x, y| x.cmp(y))
+        .filter_map(|block| block.id)
+        .max()
     else {
         return Err(anyhow!("Cannot find largest file ID"));
     };
 
     for id in (0..=largest_id).rev() {
         // Get the file.
-        let Some(mut file_pos) = blocks.iter().position(|b| b.id == Some(id)) else {
+        let Some(mut file_pos) = blocks.iter().position(|block| block.id == Some(id)) else {
             return Err(anyhow!("Cannot find position of file: {}", id));
         };
         let file = blocks[file_pos];
@@ -200,7 +172,7 @@ fn compact_contiguous_blocks(mut blocks: Vec<ContiguousBlock>) -> Result<Vec<Con
         if let Some(free_space_pos) = blocks
             .iter()
             .enumerate()
-            .position(|(pos, b)| pos < file_pos && b.is_free_space() && file.fits_into(b))
+            .position(|(pos, block)| pos < file_pos && block.is_free_space() && file.fits_into(block))
         {
             let free_space = blocks[free_space_pos];
 
@@ -237,7 +209,7 @@ fn compact_contiguous_blocks(mut blocks: Vec<ContiguousBlock>) -> Result<Vec<Con
 
 /// Converts blocks to the same disk format as part 1.
 fn convert_contiguous_blocks_to_disk(blocks: Vec<ContiguousBlock>) -> Vec<Option<usize>> {
-    blocks.iter().flat_map(|b| vec![b.id; b.size]).collect()
+    blocks.iter().flat_map(|block| vec![block.id; block.size]).collect()
 }
 
 #[cfg(test)]

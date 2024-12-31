@@ -2,10 +2,8 @@ use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-5.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-5.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -17,8 +15,8 @@ fn part_1(input: String) -> Result<u32> {
 
     updates
         .iter()
-        .filter(|u| in_right_order(u, &rules))
-        .map(|u| middle_page_number_by_update_len(u))
+        .filter(|update| in_right_order(update, &rules))
+        .map(|update| middle_page_number_by_update_len(update))
         .sum()
 }
 
@@ -27,73 +25,71 @@ fn part_2(input: String) -> Result<u32> {
 
     updates
         .iter()
-        .filter(|u| !in_right_order(u, &rules))
-        .map(|u| middle_page_number_by_power(u, &rules))
+        .filter(|update| !in_right_order(update, &rules))
+        .map(|update| middle_page_number_by_power(update, &rules))
         .sum()
 }
 
-/// Converts [input] into an "updates" list and a "rules" set.
+/// Converts input into an "updates" list and a "rules" set.
 fn parse_input(input: &str) -> Result<(Vec<Vec<&str>>, HashSet<&str>)> {
-    let input = input.trim().split("\n\n").collect::<Vec<&str>>();
-    let [rules_input, updates_input, ..] = input.as_slice() else {
+    let input = input.split_terminator("\n\n").collect::<Vec<_>>();
+    let [rules_input, updates_input] = input[..] else {
         return Err(anyhow!("Cannot split input into rules and updates"));
     };
 
-    let rules = HashSet::from_iter(rules_input.split("\n"));
+    let rules = HashSet::from_iter(rules_input.split_terminator("\n"));
 
     let updates = updates_input
-        .split("\n")
-        .map(|u| u.split(",").collect())
-        .collect::<Vec<_>>();
+        .split_terminator("\n")
+        .map(|update| update.split_terminator(",").collect())
+        .collect();
 
     Ok((updates, rules))
 }
 
-/// Check whether [update] is in right order i.e. each subsequent page has decreasing "power".
+/// Checks whether update is in right order i.e. each subsequent page has decreasing "power".
 fn in_right_order(update: &[&str], rules: &HashSet<&str>) -> bool {
-    for i in 0..update.len() {
-        if get_power(update[i], update, rules) != update.len() - i - 1 {
-            return false;
-        }
-    }
-
-    true
+    update
+        .iter()
+        .rev()
+        .enumerate()
+        .all(|(index, page)| get_power(page, update, rules) == index)
 }
 
 fn middle_page_number_by_update_len(update: &[&str]) -> Result<u32> {
     let middle_index = update.len() / 2;
 
-    if let Some(middle_str) = update.get(middle_index) {
-        middle_str
-            .parse::<u32>()
-            .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
-    } else {
-        Err(anyhow!(
+    let Some(middle_page) = update.get(middle_index) else {
+        return Err(anyhow!(
             "Cannot retrieve middle page number from {:?}",
             update
-        ))
-    }
+        ));
+    };
+
+    middle_page
+        .parse()
+        .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
 }
 
 fn middle_page_number_by_power(update: &[&str], rules: &HashSet<&str>) -> Result<u32> {
     let middle_power = update.len() / 2;
 
-    if let Some(middle_str) = update
+    let Some(middle_page) = update
         .iter()
-        .find(|u| get_power(u, update, rules) == middle_power)
-    {
-        middle_str
-            .parse::<u32>()
-            .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
-    } else {
-        Err(anyhow!(
+        .find(|page| get_power(page, update, rules) == middle_power)
+    else {
+        return Err(anyhow!(
             "Cannot get element with middle power from {:?}",
             update
-        ))
-    }
+        ));
+    };
+
+    middle_page
+        .parse::<u32>()
+        .map_err(|e| anyhow!("Cannot parse middle page number: {}", e))
 }
 
-/// Gets the "power" value of [page_number] within the group of pages inside [update].
+/// Gets the "power" value of page_number within the group of pages inside update.
 ///
 /// The "power" value is the number of rules that put that number in front of the other numbers.
 /// E.g. for this input of a correct update:

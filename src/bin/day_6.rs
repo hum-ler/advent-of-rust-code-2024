@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-6.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-6.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -13,25 +11,31 @@ fn main() {
 }
 
 fn part_1(input: String) -> Result<usize> {
-    let (mut guard, mut grid, grid_size) = parse_input(&input)?;
+    let (mut guard, mut grid, grid_size) = parse_input(input)?;
 
-    while guard.0.is_some() {
-        traverse(&mut guard, &mut grid, &grid_size)?;
-    }
+    while TraversalOutcome::Exited != traverse(&mut guard, &mut grid, &grid_size)? {}
 
-    Ok(grid.values().filter(|t| **t == CoordType::Visited).count())
+    Ok(grid
+        .values()
+        .filter(|t| match t {
+            CoordType::Obstacle | CoordType::Free => false,
+            CoordType::VisitedNorth
+            | CoordType::VisitedEast
+            | CoordType::VisitedSouth
+            | CoordType::VisitedWest => true,
+        })
+        .count())
 }
 
 fn part_2(input: String) -> Result<usize> {
     // Make use of the result from part 1.
-    let potential_positions = list_potential_positions(&input)?;
+    let potential_positions = list_potential_positions(input.clone())?;
 
-    let (guard, grid, grid_size) = parse_input_with_direction(&input)?;
+    let (guard, grid, grid_size) = parse_input(input)?;
 
     count_obstacle_positions(&potential_positions, &guard, &grid, &grid_size)
 }
 
-// Direction that the guard is facing.
 #[derive(Clone)]
 enum Direction {
     N,
@@ -46,180 +50,8 @@ type Guard = (Option<Coord>, Direction);
 
 type GridSize = (usize, usize);
 
-/// Grid values for part 1.
-#[derive(PartialEq)]
-enum CoordType {
-    Obstacle,
-    Free,
-    Visited,
-}
-
-/// Parses [input] into a [Guard], a map of coords against terrain type, and the size of the grid.
-fn parse_input(input: &str) -> Result<(Guard, HashMap<Coord, CoordType>, GridSize)> {
-    let mut guard = (None, Direction::N);
-    let mut grid = HashMap::new();
-
-    let input = input.split_terminator("\n").collect::<Vec<_>>();
-    let grid_size = (input.len(), input.first().map_or(0, |s| s.len()));
-
-    input.iter().enumerate().try_for_each(|(row, l)| {
-        l.as_bytes().iter().enumerate().try_for_each(|(column, b)| {
-            match b {
-                b'#' => {
-                    grid.insert((row, column), CoordType::Obstacle);
-                }
-                b'.' => {
-                    grid.insert((row, column), CoordType::Free);
-                }
-                b'^' => {
-                    grid.insert((row, column), CoordType::Visited);
-                    guard = (Some((row, column)), Direction::N);
-                }
-                x => {
-                    return Err(anyhow!("Unexpect input: {}", x));
-                }
-            }
-
-            Ok(())
-        })
-    })?;
-
-    Ok((guard, grid, grid_size))
-}
-
-/// Moves the guard one step, or turns the guard 90 degrees if blocked.
-///
-/// If the guard leaves the grid, its coords will be set to None.
-fn traverse(
-    guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordType>,
-    grid_size: &GridSize,
-) -> Result<()> {
-    match guard.1 {
-        Direction::N => traverse_n(guard, grid)?,
-        Direction::E => traverse_e(guard, grid, grid_size.1)?,
-        Direction::S => traverse_s(guard, grid, grid_size.0)?,
-        Direction::W => traverse_w(guard, grid)?,
-    }
-
-    Ok(())
-}
-
-fn traverse_n(guard: &mut Guard, grid: &mut HashMap<Coord, CoordType>) -> Result<()> {
-    let Some(coord) = guard.0 else {
-        return Err(anyhow!("Coord cannot be None"));
-    };
-
-    if coord.0 == 0 {
-        // Exiting the grid.
-        *guard = (None, Direction::N);
-    } else {
-        match grid[&(coord.0 - 1, coord.1)] {
-            CoordType::Obstacle => {
-                *guard = (Some((coord.0, coord.1)), Direction::E);
-            }
-            CoordType::Free => {
-                grid.insert((coord.0 - 1, coord.1), CoordType::Visited);
-                *guard = (Some((coord.0 - 1, coord.1)), Direction::N);
-            }
-            CoordType::Visited => {
-                *guard = (Some((coord.0 - 1, coord.1)), Direction::N);
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn traverse_e(
-    guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordType>,
-    column_count: usize,
-) -> Result<()> {
-    let Some(coord) = guard.0 else {
-        return Err(anyhow!("Coord cannot be None"));
-    };
-
-    if coord.1 >= column_count - 1 {
-        // Exiting the grid.
-        *guard = (None, Direction::E);
-    } else {
-        match grid[&(coord.0, coord.1 + 1)] {
-            CoordType::Obstacle => {
-                *guard = (Some((coord.0, coord.1)), Direction::S);
-            }
-            CoordType::Free => {
-                grid.insert((coord.0, coord.1 + 1), CoordType::Visited);
-                *guard = (Some((coord.0, coord.1 + 1)), Direction::E);
-            }
-            CoordType::Visited => {
-                *guard = (Some((coord.0, coord.1 + 1)), Direction::E);
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn traverse_s(
-    guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordType>,
-    row_count: usize,
-) -> Result<()> {
-    let Some(coord) = guard.0 else {
-        return Err(anyhow!("Coord cannot be None"));
-    };
-
-    if coord.0 >= row_count - 1 {
-        // Exiting the grid.
-        *guard = (None, Direction::S);
-    } else {
-        match grid[&(coord.0 + 1, coord.1)] {
-            CoordType::Obstacle => {
-                *guard = (Some((coord.0, coord.1)), Direction::W);
-            }
-            CoordType::Free => {
-                grid.insert((coord.0 + 1, coord.1), CoordType::Visited);
-                *guard = (Some((coord.0 + 1, coord.1)), Direction::S);
-            }
-            CoordType::Visited => {
-                *guard = (Some((coord.0 + 1, coord.1)), Direction::S);
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn traverse_w(guard: &mut Guard, grid: &mut HashMap<Coord, CoordType>) -> Result<()> {
-    let Some(coord) = guard.0 else {
-        return Err(anyhow!("Coord cannot be None"));
-    };
-
-    if coord.1 == 0 {
-        // Exiting the grid.
-        *guard = (None, Direction::W);
-    } else {
-        match grid[&(coord.0, coord.1 - 1)] {
-            CoordType::Obstacle => {
-                *guard = (Some((coord.0, coord.1)), Direction::N);
-            }
-            CoordType::Free => {
-                grid.insert((coord.0, coord.1 - 1), CoordType::Visited);
-                *guard = (Some((coord.0, coord.1 - 1)), Direction::W);
-            }
-            CoordType::Visited => {
-                *guard = (Some((coord.0, coord.1 - 1)), Direction::W);
-            }
-        }
-    }
-
-    Ok(())
-}
-
-/// Grid values for part 2.
 #[derive(Clone, PartialEq)]
-enum CoordTypeWithDirection {
+enum CoordType {
     Obstacle,
     Free,
     VisitedNorth,
@@ -228,75 +60,76 @@ enum CoordTypeWithDirection {
     VisitedWest,
 }
 
-/// The outcome from calling [traverse_with_direction].
 #[derive(PartialEq)]
 enum TraversalOutcome {
+    /// Traversal should continue.
     Continue,
+
+    /// Guard has exited the grid.
     Exited,
+
+    /// Guard has entered a [Coord] visited previously from the same [Direction].
     Loop,
 }
 
-/// Derive the list of potential positions for the obstacle.
+/// Derives the list of potential positions for the obstacle.
 ///
 /// The positions are those visited by the guard before introducing the additional obstacle.
-fn list_potential_positions(input: &str) -> Result<Vec<Coord>> {
+fn list_potential_positions(input: String) -> Result<Vec<Coord>> {
     let (mut guard, mut grid, grid_size) = parse_input(input)?;
 
-    // The starting location of the guard will also be marked as Visited.
+    // The starting location of the guard will also be marked as CoordType::VisitedNorth.
     let Some(guard_starting_position) = guard.0 else {
         return Err(anyhow!("Invalid guard starting position"));
     };
 
-    while guard.0.is_some() {
-        traverse(&mut guard, &mut grid, &grid_size)?;
-    }
+    while TraversalOutcome::Exited != traverse(&mut guard, &mut grid, &grid_size)? {}
 
     Ok(grid
-        .iter()
+        .into_iter()
         .filter_map(|(coord, coord_type)| {
-            if *coord == guard_starting_position {
+            if coord == guard_starting_position {
                 return None;
             }
 
-            if *coord_type == CoordType::Visited {
-                Some(*coord)
-            } else {
-                None
+            match coord_type {
+                CoordType::Obstacle | CoordType::Free => None,
+                CoordType::VisitedNorth
+                | CoordType::VisitedEast
+                | CoordType::VisitedSouth
+                | CoordType::VisitedWest => Some(coord),
             }
         })
-        .collect::<Vec<Coord>>())
+        .collect())
 }
 
-fn parse_input_with_direction(
-    input: &str,
-) -> Result<(Guard, HashMap<Coord, CoordTypeWithDirection>, GridSize)> {
+/// Parses input into a [Guard], a map of [Coord]s against terrain type, and the size of the grid.
+fn parse_input(input: String) -> Result<(Guard, HashMap<Coord, CoordType>, GridSize)> {
     let mut guard = (None, Direction::N);
     let mut grid = HashMap::new();
 
     let input = input.split_terminator("\n").collect::<Vec<_>>();
     let grid_size = (input.len(), input[0].len());
 
-    input.iter().enumerate().try_for_each(|(row, l)| {
-        l.as_bytes().iter().enumerate().try_for_each(|(column, b)| {
-            match b {
+    for (row, line) in input.iter().enumerate() {
+        for (col, byte) in line.as_bytes().iter().enumerate() {
+            match byte {
                 b'#' => {
-                    grid.insert((row, column), CoordTypeWithDirection::Obstacle);
+                    grid.insert((row, col), CoordType::Obstacle);
                 }
                 b'.' => {
-                    grid.insert((row, column), CoordTypeWithDirection::Free);
+                    grid.insert((row, col), CoordType::Free);
                 }
                 b'^' => {
-                    grid.insert((row, column), CoordTypeWithDirection::VisitedNorth);
-                    guard = (Some((row, column)), Direction::N);
+                    grid.insert((row, col), CoordType::VisitedNorth);
+                    guard = (Some((row, col)), Direction::N);
                 }
                 x => {
                     return Err(anyhow!("Unexpect input: {}", x));
                 }
             }
-
-            Ok(())
-        })
-    })?;
+        }
+    }
 
     Ok((guard, grid, grid_size))
 }
@@ -307,19 +140,19 @@ fn parse_input_with_direction(
 fn count_obstacle_positions(
     potential_positions: &[Coord],
     guard: &Guard,
-    grid: &HashMap<Coord, CoordTypeWithDirection>,
+    grid: &HashMap<Coord, CoordType>,
     grid_size: &GridSize,
 ) -> Result<usize> {
     let mut count = 0;
 
-    for &(row, column) in potential_positions {
+    for &(row, col) in potential_positions {
         // Set up this iteration.
         let mut guard = (guard.0, guard.1.clone());
         let mut grid = grid.clone();
-        grid.insert((row, column), CoordTypeWithDirection::Obstacle);
+        grid.insert((row, col), CoordType::Obstacle);
 
         loop {
-            match traverse_with_direction(&mut guard, &mut grid, grid_size)? {
+            match traverse(&mut guard, &mut grid, grid_size)? {
                 TraversalOutcome::Continue => continue,
                 TraversalOutcome::Exited => break,
                 TraversalOutcome::Loop => {
@@ -333,23 +166,27 @@ fn count_obstacle_positions(
     Ok(count)
 }
 
-fn traverse_with_direction(
+/// Moves the guard one step, or turns the guard 90 degrees if blocked.
+///
+/// In normal traversal, the guard and grid are updated accordingly, and
+/// [TraversalOutcome::Continue] is returned.
+///
+/// [TraversalOutcome::Exited] and [TraversalOutcome::Loop] returns immediately -- the guard and
+/// grid are not modified.
+fn traverse(
     guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordTypeWithDirection>,
+    grid: &mut HashMap<Coord, CoordType>,
     grid_size: &GridSize,
 ) -> Result<TraversalOutcome> {
     match guard.1 {
-        Direction::N => traverse_n_with_direction(guard, grid),
-        Direction::E => traverse_e_with_direction(guard, grid, grid_size.1),
-        Direction::S => traverse_s_with_direction(guard, grid, grid_size.0),
-        Direction::W => traverse_w_with_direction(guard, grid),
+        Direction::N => traverse_n(guard, grid),
+        Direction::E => traverse_e(guard, grid, grid_size.1),
+        Direction::S => traverse_s(guard, grid, grid_size.0),
+        Direction::W => traverse_w(guard, grid),
     }
 }
 
-fn traverse_n_with_direction(
-    guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordTypeWithDirection>,
-) -> Result<TraversalOutcome> {
+fn traverse_n(guard: &mut Guard, grid: &mut HashMap<Coord, CoordType>) -> Result<TraversalOutcome> {
     let Some(coord) = guard.0 else {
         return Err(anyhow!("Coord cannot be None"));
     };
@@ -359,25 +196,26 @@ fn traverse_n_with_direction(
     }
 
     match grid[&(coord.0 - 1, coord.1)] {
-        CoordTypeWithDirection::Obstacle => {
+        CoordType::Obstacle => {
             *guard = (Some((coord.0, coord.1)), Direction::E);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::Free
-        | CoordTypeWithDirection::VisitedEast
-        | CoordTypeWithDirection::VisitedSouth
-        | CoordTypeWithDirection::VisitedWest => {
-            grid.insert((coord.0 - 1, coord.1), CoordTypeWithDirection::VisitedNorth);
+        CoordType::Free
+        | CoordType::VisitedEast
+        | CoordType::VisitedSouth
+        | CoordType::VisitedWest => {
+            grid.entry((coord.0 - 1, coord.1))
+                .and_modify(|ct| *ct = CoordType::VisitedNorth);
             *guard = (Some((coord.0 - 1, coord.1)), Direction::N);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::VisitedNorth => Ok(TraversalOutcome::Loop),
+        CoordType::VisitedNorth => Ok(TraversalOutcome::Loop),
     }
 }
 
-fn traverse_e_with_direction(
+fn traverse_e(
     guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordTypeWithDirection>,
+    grid: &mut HashMap<Coord, CoordType>,
     column_count: usize,
 ) -> Result<TraversalOutcome> {
     let Some(coord) = guard.0 else {
@@ -389,25 +227,26 @@ fn traverse_e_with_direction(
     }
 
     match grid[&(coord.0, coord.1 + 1)] {
-        CoordTypeWithDirection::Obstacle => {
+        CoordType::Obstacle => {
             *guard = (Some((coord.0, coord.1)), Direction::S);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::Free
-        | CoordTypeWithDirection::VisitedNorth
-        | CoordTypeWithDirection::VisitedSouth
-        | CoordTypeWithDirection::VisitedWest => {
-            grid.insert((coord.0, coord.1 + 1), CoordTypeWithDirection::VisitedEast);
+        CoordType::Free
+        | CoordType::VisitedNorth
+        | CoordType::VisitedSouth
+        | CoordType::VisitedWest => {
+            grid.entry((coord.0, coord.1 + 1))
+                .and_modify(|ct| *ct = CoordType::VisitedEast);
             *guard = (Some((coord.0, coord.1 + 1)), Direction::E);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::VisitedEast => Ok(TraversalOutcome::Loop),
+        CoordType::VisitedEast => Ok(TraversalOutcome::Loop),
     }
 }
 
-fn traverse_s_with_direction(
+fn traverse_s(
     guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordTypeWithDirection>,
+    grid: &mut HashMap<Coord, CoordType>,
     row_count: usize,
 ) -> Result<TraversalOutcome> {
     let Some(coord) = guard.0 else {
@@ -419,26 +258,24 @@ fn traverse_s_with_direction(
     }
 
     match grid[&(coord.0 + 1, coord.1)] {
-        CoordTypeWithDirection::Obstacle => {
+        CoordType::Obstacle => {
             *guard = (Some((coord.0, coord.1)), Direction::W);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::Free
-        | CoordTypeWithDirection::VisitedNorth
-        | CoordTypeWithDirection::VisitedEast
-        | CoordTypeWithDirection::VisitedWest => {
-            grid.insert((coord.0 + 1, coord.1), CoordTypeWithDirection::VisitedSouth);
+        CoordType::Free
+        | CoordType::VisitedNorth
+        | CoordType::VisitedEast
+        | CoordType::VisitedWest => {
+            grid.entry((coord.0 + 1, coord.1))
+                .and_modify(|ct| *ct = CoordType::VisitedSouth);
             *guard = (Some((coord.0 + 1, coord.1)), Direction::S);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::VisitedSouth => Ok(TraversalOutcome::Loop),
+        CoordType::VisitedSouth => Ok(TraversalOutcome::Loop),
     }
 }
 
-fn traverse_w_with_direction(
-    guard: &mut Guard,
-    grid: &mut HashMap<Coord, CoordTypeWithDirection>,
-) -> Result<TraversalOutcome> {
+fn traverse_w(guard: &mut Guard, grid: &mut HashMap<Coord, CoordType>) -> Result<TraversalOutcome> {
     let Some(coord) = guard.0 else {
         return Err(anyhow!("Coord cannot be None"));
     };
@@ -448,19 +285,20 @@ fn traverse_w_with_direction(
     }
 
     match grid[&(coord.0, coord.1 - 1)] {
-        CoordTypeWithDirection::Obstacle => {
+        CoordType::Obstacle => {
             *guard = (Some((coord.0, coord.1)), Direction::N);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::Free
-        | CoordTypeWithDirection::VisitedNorth
-        | CoordTypeWithDirection::VisitedEast
-        | CoordTypeWithDirection::VisitedSouth => {
-            grid.insert((coord.0, coord.1 - 1), CoordTypeWithDirection::VisitedWest);
+        CoordType::Free
+        | CoordType::VisitedNorth
+        | CoordType::VisitedEast
+        | CoordType::VisitedSouth => {
+            grid.entry((coord.0, coord.1 - 1))
+                .and_modify(|ct| *ct = CoordType::VisitedWest);
             *guard = (Some((coord.0, coord.1 - 1)), Direction::W);
             Ok(TraversalOutcome::Continue)
         }
-        CoordTypeWithDirection::VisitedWest => Ok(TraversalOutcome::Loop),
+        CoordType::VisitedWest => Ok(TraversalOutcome::Loop),
     }
 }
 

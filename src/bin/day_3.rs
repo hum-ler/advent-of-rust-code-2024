@@ -1,12 +1,8 @@
-use std::num::ParseIntError;
-
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use regex::Regex;
 
-const INPUT_FILE: &str = "inputs/day-3.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-3.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -18,17 +14,15 @@ fn part_1(input: String) -> Result<u32> {
 }
 
 fn part_2(input: String) -> Result<u32> {
-    // _mul_with_do_by_scanning(&input)
-
-    mul_with_do_by_stripping(&input)
+    mul_with_do_and_dont(&input)
 }
 
 /// Sums up all the `mul()`s.
 fn mul(input: &str) -> Result<u32> {
     Regex::new(r"mul\((\d{1,3}),(\d{1,3})\)")?
         .captures_iter(input)
-        .map(|c| {
-            let [left, right] = c.extract().1;
+        .map(|capture| {
+            let [left, right] = capture.extract().1;
 
             Ok(left.parse::<u32>()? * right.parse::<u32>()?)
         })
@@ -37,93 +31,40 @@ fn mul(input: &str) -> Result<u32> {
 
 /// Sums up all the `mul()`s, taking `do()`s and `don't()`s into account.
 ///
-/// Uses a toggle (flipped by `do()`s and `don't()`s) to determine whether `mul()`s are included.
-fn _mul_with_do_by_scanning(input: &str) -> Result<u32> {
-    let acc: Result<(u32, bool), ParseIntError> =
-        Regex::new(r"(?<inst>mul\((?<left>\d{1,3}),(?<right>\d{1,3})\)|don't\(\)|do\(\))")?
-            .captures_iter(input)
-            .try_fold((0u32, true), |acc, c| match &c["inst"] {
-                "don't()" => Ok((acc.0, false)),
-                "do()" => Ok((acc.0, true)),
-                _ => {
-                    if acc.1 {
-                        let left = c["left"].parse::<u32>()?;
-                        let right = c["right"].parse::<u32>()?;
-
-                        Ok((acc.0 + left * right, true))
-                    } else {
-                        Ok(acc)
-                    }
-                }
-            });
-
-    // Rewrap the result because T is different.
-    if let Ok(acc) = acc {
-        Ok(acc.0)
-    } else {
-        Err(anyhow!("Cannot parse input: {}", acc.unwrap_err()))
-    }
-}
-
-/// Sums up all the `mul()`s, taking `do()`s and `don't()`s into account.
-///
 /// All the `don't()`s are stripped out from `input` before `mul()`s are calculated.
-fn mul_with_do_by_stripping(input: &str) -> Result<u32> {
-    // mul(_strip_donts(input).as_str())
-
-    mul(strip_donts_with_regex(input)?.as_str())
+fn mul_with_do_and_dont(input: &str) -> Result<u32> {
+    mul(&strip_donts(input)?)
 }
 
 /// Removes all `don't()`s until we hit a `do()` or the end of line.
-///
-/// Uses splitting into substrings to perform the replacement.
-fn _strip_donts(input: &str) -> String {
-    let mut input = String::from(input);
-
-    while let Some(start_index) = input.find("don't()") {
-        let (header, search) = input.split_at(start_index);
-
-        if let Some(end_index) = search.find("do()") {
-            input = [header, search.split_at(end_index + 4).1].join("");
-        } else {
-            input = header.to_string();
-        }
-    }
-
-    input
-}
-
-/// Removes all `don't()`s until we hit a `do()` or the end of line.
-///
-/// Uses regex to perform the replacement.
-fn strip_donts_with_regex(input: &str) -> Result<String> {
+fn strip_donts(input: &str) -> Result<String> {
     // The `s` flag allows `.` to match `\n`.
     let input = Regex::new(r"(?s)don't\(\).*?do\(\)")?.replace_all(input, "");
     let input = Regex::new(r"(?s)don't\(\).*")?.replace(input.as_ref(), "");
 
-    Ok(input.into_owned())
+    Ok(input.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const EXAMPLE_1_INPUT: &str =
-        "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
-
-    const EXAMPLE_2_INPUT: &str =
-        "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))";
-
     #[test]
     fn example_1() -> Result<()> {
-        assert_eq!(part_1(EXAMPLE_1_INPUT.trim().to_string())?, 161);
+        let input =
+            "xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))".to_string();
+
+        assert_eq!(part_1(input)?, 161);
 
         Ok(())
     }
 
     #[test]
     fn example_2() -> Result<()> {
-        assert_eq!(part_2(EXAMPLE_2_INPUT.trim().to_string())?, 48);
+        let input =
+            "xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))".to_string();
+
+        assert_eq!(part_2(input)?, 48);
 
         Ok(())
     }

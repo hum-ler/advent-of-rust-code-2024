@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
-
-const INPUT_FILE: &str = "inputs/day-1.txt";
+use anyhow::Result;
 
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-1.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -31,28 +29,24 @@ fn part_2(input: String) -> Result<u32> {
     let mut cache: HashMap<u32, u32> = HashMap::new();
 
     left.iter()
-        .map(|v| {
-            if !cache.contains_key(v) {
-                let count = right.iter().filter(|u| *u == v).count().try_into();
+        .map(|n| {
+            if !cache.contains_key(n) {
+                let count = right.iter().filter(|m| *m == n).count() as u32;
 
-                if let Ok(count) = count {
-                    cache.insert(*v, count);
-                } else {
-                    return count.map_err(|e| anyhow!("Cannot cast from usize to u32: {}", e));
-                }
+                cache.insert(*n, n * count);
             }
 
-            Ok(v * cache[v])
+            Ok(cache[n])
         })
         .sum()
 }
 
-/// Converts the input into left and right lists of u32s.
+/// Separates the input into left and right lists.
 fn parse_input_into_lists(input: String) -> Result<(Vec<u32>, Vec<u32>)> {
     Ok(input
         .split_terminator("\n")
-        .flat_map(|s| s.split_whitespace())
-        .map(|v| v.parse::<u32>())
+        .flat_map(|line| line.split_whitespace())
+        .map(|n| n.parse::<u32>())
         .collect::<Result<Vec<_>, _>>()?
         .chunks(2)
         .map(|pair| (pair[0], pair[1]))

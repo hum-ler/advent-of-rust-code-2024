@@ -3,10 +3,8 @@ use std::{collections::VecDeque, str::FromStr};
 use anyhow::{anyhow, Result};
 use regex::Regex;
 
-const INPUT_FILE: &str = "inputs/day-17.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-17.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -125,7 +123,7 @@ impl FromStr for Computer {
         let b = captures["b"].parse()?;
         let c = captures["c"].parse()?;
         let program = captures["program"]
-            .split(",")
+            .split_terminator(",")
             .map(str::parse::<u64>)
             .collect::<Result<Vec<_>, _>>()?;
 

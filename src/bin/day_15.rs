@@ -1,9 +1,7 @@
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-15.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-15.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -36,33 +34,29 @@ fn part_2(input: String) -> Result<usize> {
 type Coord = (usize, usize);
 
 fn parse_input(input: String) -> Result<(Vec<Vec<u8>>, Coord, Vec<u8>)> {
-    let input = input.split_terminator("\n").map(str::to_string).collect::<Vec<_>>();
-    let mut sections = input.split(|s| s.is_empty());
-
-    let Some(grid_section) = sections.next() else {
-        return Err(anyhow!("Cannot find grid input"));
-    };
-    let Some(instructions_section) = sections.next() else {
-        return Err(anyhow!("Cannot find instruction input"));
+    let [grid_section, instructions_section] =
+        input.split_terminator("\n\n").collect::<Vec<_>>()[..]
+    else {
+        return Err(anyhow!("Cannot split input into grid and instructions"));
     };
 
-    let (grid, robot_pos) = parse_lines_to_grid(grid_section)?;
-    let instructions = parse_lines_to_instructions(instructions_section);
+    let (grid, robot_pos) = parse_input_to_grid(grid_section)?;
+    let instructions = parse_input_to_instructions(instructions_section);
 
     Ok((grid, robot_pos, instructions))
 }
 
-/// Parses lines into the grid, and returns the starting location of the robot.
-fn parse_lines_to_grid(lines: &[String]) -> Result<(Vec<Vec<u8>>, Coord)> {
-    let mut grid = lines
-        .iter()
-        .map(|l| l.as_bytes().to_owned())
+/// Parses input into the grid, and returns the starting location of the robot.
+fn parse_input_to_grid(input: &str) -> Result<(Vec<Vec<u8>>, Coord)> {
+    let mut grid = input
+        .split_terminator("\n")
+        .map(|line| line.as_bytes().to_owned())
         .collect::<Vec<Vec<_>>>();
 
-    let Some(row) = grid.iter().position(|r| r.contains(&b'@')) else {
+    let Some(row) = grid.iter().position(|row| row.contains(&b'@')) else {
         return Err(anyhow!("Cannot locate robot row"));
     };
-    let Some(col) = grid[row].iter().position(|c| c == &b'@') else {
+    let Some(col) = grid[row].iter().position(|col| col == &b'@') else {
         return Err(anyhow!("Cannot locate robot col"));
     };
 
@@ -72,16 +66,16 @@ fn parse_lines_to_grid(lines: &[String]) -> Result<(Vec<Vec<u8>>, Coord)> {
     Ok((grid, (row, col)))
 }
 
-/// Parses lines into the sequence of robot movements.
-fn parse_lines_to_instructions(lines: &[String]) -> Vec<u8> {
-    lines.join("").replace("\n", "").as_bytes().to_owned()
+/// Parses input into the sequence of robot movements.
+fn parse_input_to_instructions(input: &str) -> Vec<u8> {
+    input.replace("\n", "").bytes().collect()
 }
 
-/// Moves the robot by one [instruction].
+/// Moves the robot by one instruction.
 ///
 /// Returns the new position of the robot.
 ///
-/// The [grid] is updated to reflect the move.
+/// The grid is updated to reflect the move.
 fn traverse(robot_pos: Coord, instruction: u8, grid: &mut [Vec<u8>]) -> Result<Coord> {
     match instruction {
         b'^' => push_up(robot_pos, grid),
@@ -92,7 +86,7 @@ fn traverse(robot_pos: Coord, instruction: u8, grid: &mut [Vec<u8>]) -> Result<C
     }
 }
 
-/// Pushes robot or box at [pos] upwards.
+/// Pushes robot or box at pos upwards.
 ///
 /// Returns the final position of the robot or box.
 fn push_up(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
@@ -130,7 +124,7 @@ fn push_up(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
     Ok(pos)
 }
 
-/// Pushes robot or box at [pos] to the right.
+/// Pushes robot or box at pos to the right.
 ///
 /// Returns the final position of the robot or box.
 fn push_right(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
@@ -156,7 +150,7 @@ fn push_right(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
     Ok(pos)
 }
 
-/// Pushes robot or box at [pos] downwards.
+/// Pushes robot or box at pos downwards.
 ///
 /// Returns the final position of the robot or box.
 fn push_down(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
@@ -192,7 +186,7 @@ fn push_down(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
     Ok(pos)
 }
 
-/// Pushes robot or box at [pos] to the left.
+/// Pushes robot or box at pos to the left.
 ///
 /// Returns the final position of the robot or box.
 fn push_left(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
@@ -220,13 +214,13 @@ fn push_left(pos: Coord, grid: &mut [Vec<u8>]) -> Result<Coord> {
     Ok(pos)
 }
 
-/// Sums up the GPS coordinates of all the boxes in [grid].
+/// Sums up the GPS coordinates of all the boxes in grid.
 fn sum_gps_coordinates(grid: &[Vec<u8>]) -> usize {
     let mut sum = 0;
 
-    for (row, l) in grid.iter().enumerate() {
-        for (col, c) in l.iter().enumerate() {
-            if *c == b'O' || *c == b'[' {
+    for (row, line) in grid.iter().enumerate() {
+        for (col, byte) in line.iter().enumerate() {
+            if *byte == b'O' || *byte == b'[' {
                 sum += 100 * row + col;
             }
         }
@@ -238,11 +232,11 @@ fn sum_gps_coordinates(grid: &[Vec<u8>]) -> usize {
 /// Expands grid for part 2.
 fn expand_grid(grid: &[Vec<u8>]) -> Vec<Vec<u8>> {
     grid.iter()
-        .map(|r| {
-            r.iter()
-                .flat_map(|c| match c {
+        .map(|row| {
+            row.iter()
+                .flat_map(|byte| match *byte {
                     b'O' => vec![b'[', b']'],
-                    x => vec![*x, *x],
+                    x => vec![x, x],
                 })
                 .collect()
         })
@@ -269,7 +263,7 @@ fn can_push_up(pos: Coord, grid: &[Vec<u8>]) -> Result<bool> {
     }
 }
 
-/// Checks whether it is possible to push the box or robot at [pos] upwards.
+/// Checks whether it is possible to push the box or robot at pos upwards.
 fn can_push_down(pos: Coord, grid: &[Vec<u8>]) -> Result<bool> {
     let (row, col) = pos;
 

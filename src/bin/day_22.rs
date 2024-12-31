@@ -2,10 +2,8 @@ use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-22.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-22.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -15,10 +13,10 @@ fn main() {
 fn part_1(input: String) -> Result<u64> {
     input
         .split_terminator("\n")
-        .map(|l| l.parse::<u64>())
+        .map(|line| line.parse::<u64>())
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
-        .map(generate_secret_sequence)
+        .map(generate_secret_seq)
         .map(|seq| {
             seq.last()
                 .copied()
@@ -28,28 +26,25 @@ fn part_1(input: String) -> Result<u64> {
 }
 
 fn part_2(input: String) -> Result<i64> {
-    let change_sequence_maps = input
+    input
         .split_terminator("\n")
-        .map(|l| l.parse::<u64>())
+        .map(|line| line.parse::<u64>())
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
-        .map(generate_secret_sequence)
-        .map(convert_secret_to_banana_sequence)
-        .map(map_change_sequence)
-        .collect::<Vec<_>>();
+        .map(generate_secret_seq)
+        .map(convert_secret_to_banana_seq)
+        .map(map_delta_seq_to_bananas)
+        .fold(HashMap::new(), |mut acc, seq_map| {
+            // Sum up the banana amounts for each last-4-banana-delta.
 
-    // Sum up the banana amounts for each last-4-banana-delta.
-    let mut combined_change_sequence_map: HashMap<String, i64> = HashMap::new();
-    change_sequence_maps.iter().for_each(|h| {
-        h.iter().for_each(|(change_sequence, bananas)| {
-            combined_change_sequence_map
-                .entry(change_sequence.to_owned())
-                .and_modify(|acc| *acc += *bananas)
-                .or_insert(*bananas);
+            seq_map.iter().for_each(|(delta_seq, bananas)| {
+                acc.entry(delta_seq.to_owned())
+                    .and_modify(|sum| *sum += *bananas)
+                    .or_insert(*bananas);
+            });
+
+            acc
         })
-    });
-
-    combined_change_sequence_map
         .into_values()
         .max()
         .ok_or(anyhow!("Cannot find highest price"))
@@ -79,48 +74,51 @@ fn next_secret(secret: u64) -> u64 {
     step_3(step_2(step_1(secret)))
 }
 
-fn generate_secret_sequence(secret_seed: u64) -> Vec<u64> {
+fn generate_secret_seq(secret_seed: u64) -> Vec<u64> {
     let mut secret = secret_seed;
-    let mut secret_sequence = vec![secret];
+    let mut secret_seq = vec![secret];
 
     for _ in 0..2000 {
         secret = next_secret(secret);
-        secret_sequence.push(secret);
+        secret_seq.push(secret);
     }
 
-    secret_sequence
+    secret_seq
 }
 
-fn convert_secret_to_banana_sequence(secret_sequence: Vec<u64>) -> Vec<i64> {
-    secret_sequence.iter().map(|s| (s % 10) as i64).collect()
+fn convert_secret_to_banana_seq(secret_seq: Vec<u64>) -> Vec<i64> {
+    secret_seq
+        .iter()
+        .map(|secret| (secret % 10) as i64)
+        .collect()
 }
 
 /// Converts the sequence of bananas to the mapping of (last 4 banana-delta) to (banana amount).
 ///
 /// E.g. "-1,-1,0,2" => 6
-fn map_change_sequence(banana_sequence: Vec<i64>) -> HashMap<String, i64> {
-    let mut change_sequence_to_price = HashMap::new();
+fn map_delta_seq_to_bananas(banana_seq: Vec<i64>) -> HashMap<String, i64> {
+    let mut delta_seq_to_price_map = HashMap::new();
 
-    for i in 0..banana_sequence.len() {
+    for i in 0..banana_seq.len() {
         if i < 4 {
             continue;
         }
 
-        let change_sequence = format!(
+        let delta_seq = format!(
             "{},{},{},{}",
-            banana_sequence[i - 3] - banana_sequence[i - 4],
-            banana_sequence[i - 2] - banana_sequence[i - 3],
-            banana_sequence[i - 1] - banana_sequence[i - 2],
-            banana_sequence[i] - banana_sequence[i - 1]
+            banana_seq[i - 3] - banana_seq[i - 4],
+            banana_seq[i - 2] - banana_seq[i - 3],
+            banana_seq[i - 1] - banana_seq[i - 2],
+            banana_seq[i] - banana_seq[i - 1]
         );
 
         // Only the first occurrence matter.
-        change_sequence_to_price
-            .entry(change_sequence)
-            .or_insert(banana_sequence[i]);
+        delta_seq_to_price_map
+            .entry(delta_seq)
+            .or_insert(banana_seq[i]);
     }
 
-    change_sequence_to_price
+    delta_seq_to_price_map
 }
 
 #[cfg(test)]

@@ -2,8 +2,6 @@ use std::{collections::HashMap, sync::LazyLock};
 
 use anyhow::{anyhow, Result};
 
-const INPUT_FILE: &str = "inputs/day-21.txt";
-
 static NUMERIC_PAD_MOVEMENTS: LazyLock<HashMap<(u8, u8), &str>> =
     LazyLock::new(init_numeric_pad_movements);
 
@@ -11,7 +9,7 @@ static DIRECTIONAL_PAD_MOVEMENTS: LazyLock<HashMap<(u8, u8), &str>> =
     LazyLock::new(init_directional_pad_movements);
 
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-21.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -32,11 +30,11 @@ fn part_1(codes: String) -> Result<usize> {
             let sequence = code
                 .as_bytes()
                 .windows(2)
-                .map(|bv| second_redirection[&(bv[0], bv[1])].to_owned())
+                .map(|bytes| second_redirection[&(bytes[0], bytes[1])].to_owned())
                 .collect::<Vec<String>>()
                 .join("");
 
-            let split_code = code.split("A").collect::<Vec<_>>();
+            let split_code = code.split_terminator("A").collect::<Vec<_>>();
 
             let Some(code_number) = split_code.get(1) else {
                 return Err(anyhow!("Cannot retrieve code_number from code: {}", code));
@@ -65,11 +63,11 @@ fn part_2(codes: String) -> Result<usize> {
             let sequence = code
                 .as_bytes()
                 .windows(2)
-                .map(|bv| repeated_redirection[&(bv[0], bv[1])].to_owned())
+                .map(|bytes| repeated_redirection[&(bytes[0], bytes[1])].to_owned())
                 .collect::<Vec<String>>()
                 .join("");
 
-            let split_code = code.split("A").collect::<Vec<_>>();
+            let split_code = code.split_terminator("A").collect::<Vec<_>>();
 
             let Some(code_number) = split_code.get(1) else {
                 return Err(anyhow!("Cannot retrieve code_number from code: {}", code));
@@ -287,10 +285,10 @@ fn _init_numeric_pad_movements_for_input() -> HashMap<(u8, u8), &'static str> {
     ])
 }
 
-/// Substitutes the mappings in [target] by breaking down and replacing each movement with the
-/// sequences from [interface].
+/// Substitutes the mappings in target by breaking down and replacing each movement with the
+/// sequence from interface.
 ///
-/// Consumes [target].
+/// Consumes target.
 fn keypad_redirection<T>(
     interface: &HashMap<(u8, u8), &str>,
     target: HashMap<(u8, u8), T>,

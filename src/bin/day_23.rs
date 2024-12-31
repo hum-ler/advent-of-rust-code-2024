@@ -4,10 +4,8 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use regex::Regex;
 
-const INPUT_FILE: &str = "inputs/day-23.txt";
-
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-23.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -21,7 +19,7 @@ fn part_1(input: String) -> Result<usize> {
 
     let t_computers = connections
         .keys()
-        .filter(|c| c.starts_with("t"))
+        .filter(|computer| computer.starts_with("t"))
         .collect::<Vec<_>>();
 
     for t_computer in t_computers {
@@ -77,12 +75,12 @@ fn parse_input_to_connections(input: String) -> Result<HashMap<String, Vec<Strin
 
         connections
             .entry(first_computer.to_owned())
-            .and_modify(|v: &mut Vec<String>| v.push(second_computer.to_owned()))
+            .and_modify(|computers: &mut Vec<String>| computers.push(second_computer.to_owned()))
             .or_insert(vec![second_computer.to_owned()]);
 
         connections
             .entry(second_computer.to_owned())
-            .and_modify(|v| v.push(first_computer.to_owned()))
+            .and_modify(|computers| computers.push(first_computer.to_owned()))
             .or_insert(vec![first_computer.to_owned()]);
 
         Ok::<_, anyhow::Error>(())
@@ -119,9 +117,10 @@ fn are_connected(
     connections[first].contains(second)
 }
 
-/// Finds the largest complete graph within the computers represented by [nodes].
+/// Finds the largest complete graph within the computers represented by nodes.
 ///
-/// Use [prune] to stop searching once the length of [nodes] falls below [prune].
+/// Stops searching once the length of nodes falls below the value of prune, in which case, an empty
+/// [Vec] is returned.
 fn find_largest_complete_graph(
     nodes: &[String],
     connections: &HashMap<String, Vec<String>>,

@@ -2,8 +2,6 @@ use anyhow::{anyhow, Result};
 use itertools::Itertools;
 use pathfinding::prelude::dijkstra;
 
-const INPUT_FILE: &str = "inputs/day-20.txt";
-
 const PART_1_CHEAT_DURATION: usize = 2;
 
 const PART_2_CHEAT_DURATION: usize = 20;
@@ -11,7 +9,7 @@ const PART_2_CHEAT_DURATION: usize = 20;
 const TARGET_TIME_SAVED: usize = 100;
 
 fn main() {
-    match advent_of_rust_code_2024::get_part(INPUT_FILE) {
+    match advent_of_rust_code_2024::get_part("inputs/day-20.txt") {
         Ok(advent_of_rust_code_2024::Part::Part1(input)) => println!("{:?}", part_1(input)),
         Ok(advent_of_rust_code_2024::Part::Part2(input)) => println!("{:?}", part_2(input)),
         Err(error) => println!("{:?}", error),
@@ -21,7 +19,8 @@ fn main() {
 fn part_1(input: String) -> Result<usize> {
     let (grid, start, end) = parse_input_to_grid(input)?;
 
-    let Some((path, _)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
+    let Some((path, _)) = dijkstra(&start, |node| successors(node, &grid), |node| *node == end)
+    else {
         return Err(anyhow!("Cannot find shortest path"));
     };
 
@@ -35,7 +34,8 @@ fn part_1(input: String) -> Result<usize> {
 fn part_2(input: String) -> Result<usize> {
     let (grid, start, end) = parse_input_to_grid(input)?;
 
-    let Some((path, _)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
+    let Some((path, _)) = dijkstra(&start, |node| successors(node, &grid), |node| *node == end)
+    else {
         return Err(anyhow!("Cannot find shortest path"));
     };
 
@@ -55,18 +55,18 @@ fn parse_input_to_grid(input: String) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
         .collect::<Vec<Vec<_>>>();
 
     // Find the start coordinates.
-    let Some(start_row) = grid.iter().position(|r| r.contains(&b'S')) else {
+    let Some(start_row) = grid.iter().position(|row| row.contains(&b'S')) else {
         return Err(anyhow!("Cannot locate start row"));
     };
-    let Some(start_col) = grid[start_row].iter().position(|c| c == &b'S') else {
+    let Some(start_col) = grid[start_row].iter().position(|byte| byte == &b'S') else {
         return Err(anyhow!("Cannot locate start col"));
     };
 
     // Find the end coordinates.
-    let Some(end_row) = grid.iter().position(|r| r.contains(&b'E')) else {
+    let Some(end_row) = grid.iter().position(|row| row.contains(&b'E')) else {
         return Err(anyhow!("Cannot locate end row"));
     };
-    let Some(end_col) = grid[end_row].iter().position(|c| c == &b'E') else {
+    let Some(end_col) = grid[end_row].iter().position(|byte| byte == &b'E') else {
         return Err(anyhow!("Cannot locate end col"));
     };
 
@@ -77,7 +77,7 @@ fn parse_input_to_grid(input: String) -> Result<(Vec<Vec<u8>>, Coord, Coord)> {
     Ok((grid, (start_row, start_col), (end_row, end_col)))
 }
 
-/// Finds connected nodes from [node].
+/// Finds connected [Coord]s from node.
 fn successors(node: &Coord, grid: &[Vec<u8>]) -> Vec<(Coord, usize)> {
     let &(row, col) = node;
 
@@ -109,87 +109,20 @@ fn successors(node: &Coord, grid: &[Vec<u8>]) -> Vec<(Coord, usize)> {
     nodes
 }
 
-/// Solves part 1 by scanning for single-thickness walls that can skipped along the shortest path.
-fn _part_1_by_finding_walls(input: String) -> Result<usize> {
-    let (grid, start, end) = parse_input_to_grid(input)?;
-
-    let Some((path, length)) = dijkstra(&start, |n| successors(n, &grid), |n| *n == end) else {
-        return Err(anyhow!("Cannot find shortest path"));
-    };
-
-    let skippable_walls = _find_skippable_walls(&path, &grid);
-
-    let mut acceptable_skips = 0usize;
-
-    for skip in skippable_walls {
-        let mut modified_grid = grid.clone();
-        modified_grid[skip.0][skip.1] = b'.';
-
-        if let Some((_, new_length)) =
-            dijkstra(&start, |n| successors(n, &modified_grid), |n| *n == end)
-        {
-            if new_length < length && length - new_length >= TARGET_TIME_SAVED {
-                acceptable_skips += 1;
-            }
-        }
-    }
-
-    Ok(acceptable_skips)
-}
-
-fn _find_skippable_walls(path: &[Coord], grid: &[Vec<u8>]) -> Vec<Coord> {
-    let grid_size = grid.len();
-
-    path.iter()
-        .flat_map(|n| _find_skippable_walls_from_node(n, grid, grid_size))
-        .unique()
-        .collect()
-}
-
-fn _find_skippable_walls_from_node(node: &Coord, grid: &[Vec<u8>], grid_size: usize) -> Vec<Coord> {
-    // Cutting a corner does not provide any savings, so we are looking at straight line cuts.
-
-    let &(row, col) = node;
-
-    let mut nodes = Vec::default();
-
-    // N
-    if row > 1 && grid[row - 1][col] == b'#' && grid[row - 2][col] == b'.' {
-        nodes.push((row - 1, col));
-    }
-
-    // E
-    if col < grid_size - 2 && grid[row][col + 1] == b'#' && grid[row][col + 2] == b'.' {
-        nodes.push((row, col + 1));
-    }
-
-    // S
-    if row < grid_size - 2 && grid[row + 1][col] == b'#' && grid[row + 2][col] == b'.' {
-        nodes.push((row + 1, col));
-    }
-
-    // W
-    if col > 1 && grid[row][col - 1] == b'#' && grid[row][col - 2] == b'.' {
-        nodes.push((row, col - 1));
-    }
-
-    nodes
-}
-
 fn manhattan_distance(node_1: &Coord, node_2: &Coord) -> usize {
     node_1.0.abs_diff(node_2.0) + node_1.1.abs_diff(node_2.1)
 }
 
-/// Counts cheats that save at least [minimum_time_saved].
+/// Counts cheats that save at least minimum_time_saved.
 fn find_shortcuts(path: &[Coord], cheat_duration: usize, minimum_time_saved: usize) -> usize {
-    // Looks through the [path] and find pairs that can be connected within [cheat_duration] i.e.
+    // Looks through the path and find pairs that can be connected within cheat_duration i.e.
     // potential cheats.
     //
-    // The difference in the positions of the node pair in [path] is the potential time saved by
-    // skipping over the intermediate nodes in [path]. We do need to substract the necessary time it
+    // The difference in the positions of the node pair in path is the potential time saved by
+    // skipping over the intermediate nodes in path. We do need to substract the necessary time it
     // takes to traverse between the pair in the most direct line because the savings are in
     // avoiding the deviations from this line. This also takes care of the case whereby the pair are
-    // already in the most direct line from each other in [path].
+    // already in the most direct line from each other in path.
 
     path.iter()
         .enumerate()
