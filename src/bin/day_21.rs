@@ -46,36 +46,90 @@ fn part_1(codes: String) -> Result<usize> {
 }
 
 fn part_2(codes: String) -> Result<usize> {
-    let numeric_pad_movements = _init_numeric_pad_movements_for_input();
+    let directional_redirection =
+        keypad_redirection(&DIRECTIONAL_PAD_MOVEMENTS, NUMERIC_PAD_MOVEMENTS.clone());
 
-    let mut repeated_redirection =
-        keypad_redirection(&DIRECTIONAL_PAD_MOVEMENTS, numeric_pad_movements);
-
-    for _ in 0..24 {
-        repeated_redirection = keypad_redirection(&DIRECTIONAL_PAD_MOVEMENTS, repeated_redirection);
-    }
+    let mut cache: HashMap<Movement, usize> = HashMap::new();
 
     codes
         .split_terminator("\n")
-        .map(|code| {
-            let code = format!("{}{}", "A", code);
-
-            let sequence = code
-                .as_bytes()
-                .windows(2)
-                .map(|bytes| repeated_redirection[&(bytes[0], bytes[1])].to_owned())
-                .collect::<Vec<String>>()
-                .join("");
-
-            let split_code = code.split_terminator("A").collect::<Vec<_>>();
-
-            let Some(code_number) = split_code.get(1) else {
-                return Err(anyhow!("Cannot retrieve code_number from code: {}", code));
-            };
-
-            Ok(sequence.len() * code_number.parse::<usize>()?)
-        })
+        .map(|code| code_complexity(code, &directional_redirection, &mut cache))
         .sum()
+}
+
+/// Calculates the complexity for code.
+///
+/// Uses directional_lookup to generate the first level of redirection. This skips the involvement
+/// of the numeric keypad entirely.
+fn code_complexity(
+    code: &str,
+    directional_lookup: &HashMap<(u8, u8), String>,
+    shortest_seq_len_cache: &mut HashMap<Movement, usize>,
+) -> Result<usize> {
+    // First redirection.
+    let code = format!("{}{}", "A", code);
+    let code_seq = code
+        .as_bytes()
+        .windows(2)
+        .map(|bytes| directional_lookup[&(bytes[0], bytes[1])].to_owned())
+        .collect::<Vec<String>>()
+        .join("");
+
+    // The next 24 redirections.
+    let code_seq = format!("{}{}", "A", code_seq);
+    let code_len = code_seq
+        .as_bytes()
+        .windows(2)
+        .map(|bytes| shortest_movement(&(bytes[0], bytes[1], 24), shortest_seq_len_cache))
+        .sum::<usize>();
+
+    // Get the code number.
+    let split_code = code.split_terminator("A").collect::<Vec<_>>();
+    let Some(code_number) = split_code.get(1) else {
+        return Err(anyhow!("Cannot retrieve code_number from code: {}", code));
+    };
+
+    Ok(code_len * code_number.parse::<usize>()?)
+}
+
+/// Represents a movement -- "from" button, "to" button, and the level of redirection.
+type Movement = (u8, u8, usize);
+
+/// Finds the shortest movement sequence.
+fn shortest_movement(
+    movement: &Movement,
+    shortest_seq_len_cache: &mut HashMap<Movement, usize>,
+) -> usize {
+    if shortest_seq_len_cache.contains_key(movement) {
+        return shortest_seq_len_cache[movement];
+    }
+
+    let &(from, to, redirections) = movement;
+
+    // This is the sequence that we have to move for redirection.
+    let seq = DIRECTIONAL_PAD_MOVEMENTS[&(from, to)];
+
+    if redirections == 1 {
+        // Base case. Store in cache and return.
+        return *shortest_seq_len_cache.entry(*movement).or_insert(seq.len());
+    }
+
+    let shortest_seq_len = ("A".to_string() + seq)
+        .into_bytes()
+        .windows(2)
+        .map(|pair| {
+            shortest_movement(
+                &(pair[0], pair[1], redirections - 1),
+                shortest_seq_len_cache,
+            )
+        })
+        .sum();
+
+    shortest_seq_len_cache
+        .entry(*movement)
+        .or_insert(shortest_seq_len);
+
+    shortest_seq_len
 }
 
 fn init_numeric_pad_movements() -> HashMap<(u8, u8), &'static str> {
@@ -259,29 +313,6 @@ fn init_directional_pad_movements() -> HashMap<(u8, u8), &'static str> {
         ((b'<', b'>'), ">>A"),
         ((b'<', b'v'), ">A"),
         ((b'<', b'<'), "A"),
-    ])
-}
-
-fn _init_numeric_pad_movements_for_input() -> HashMap<(u8, u8), &'static str> {
-    // Include only pairs that are used in input.
-    HashMap::from([
-        ((b'A', b'2'), "<^A"),
-        ((b'A', b'3'), "^A"),
-        ((b'A', b'4'), "^^<<A"),
-        ((b'A', b'5'), "<^^A"),
-        ((b'0', b'8'), "^^^A"),
-        ((b'2', b'4'), "<^A"),
-        ((b'3', b'A'), "vA"),
-        ((b'3', b'8'), "<^^A"),
-        ((b'4', b'5'), ">A"),
-        ((b'4', b'6'), ">>A"),
-        ((b'5', b'0'), "vvA"),
-        ((b'5', b'9'), "^>A"),
-        ((b'6', b'A'), "vvA"),
-        ((b'8', b'A'), "vvv>A"),
-        ((b'8', b'6'), "v>A"),
-        ((b'9', b'A'), "vvvA"),
-        ((b'9', b'3'), "vvA"),
     ])
 }
 
