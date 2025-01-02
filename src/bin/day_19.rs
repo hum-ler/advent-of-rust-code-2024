@@ -1,5 +1,6 @@
+use std::collections::HashMap;
+
 use anyhow::{anyhow, Result};
-use rand::{seq::SliceRandom, thread_rng};
 
 fn main() {
     match advent_of_rust_code_2024::get_part("inputs/day-19.txt") {
@@ -9,87 +10,26 @@ fn main() {
     }
 }
 
-fn _part_1_example(input: String) -> Result<usize> {
-    // 1. Take the towels list and reduce it to unique patterns.
-    //   "r, wr, b, g, bwu, rb, gb, br"  becomes  "r, wr, b, g, bwu"
-    // 2. Since 'u' is only found in "bwu", any design with 'u' in it that cannot use "bwu" are out.
-    // 3. Do the same for 'w' with "wr".
-    // 4. The rest of the designs are possible since 'r', 'b', 'g' are single-color.
-
-    let (_, designs) = parse_input(&input)?;
-
-    let mut possible_designs = 0usize;
-
-    for design in designs {
-        let design = design.replace("bwu", "");
-
-        if design.contains("u") {
-            continue;
-        }
-
-        let design = design.replace("wr", "");
-
-        if design.contains("w") {
-            continue;
-        }
-
-        possible_designs += 1;
-    }
-
-    Ok(possible_designs)
-}
-
 fn part_1(input: String) -> Result<usize> {
-    // 1. Take the towels list and reduce it to unique patterns that includes 'u' ('r', 'g', 'w',
-    //    'b' single-colors are available).
-    // 2. For each design, find elements from 1. to substitute the 'u's (the hard part).
-    // 3. The rest of the designs are possible since we have 'r', 'g', 'w', 'b'.
-
     let (patterns, designs) = parse_input(&input)?;
 
-    let mut patterns = reduce_input_patterns(&patterns);
-    patterns.sort_by_key(|pattern| pattern.len());
-
-    let mut possible_designs = 0usize;
-
-    let mut retries: Vec<&str> = Vec::default();
-
-    for design in &designs {
-        let mut reduction = String::from(*design);
-        for pattern in &patterns {
-            reduction = reduction.replace(pattern, " ");
-        }
-
-        if reduction.contains("u") {
-            retries.push(design);
-        } else {
-            possible_designs += 1;
-        }
-    }
-
-    // Just snuffle the patterns randomly and retry. With enough rounds, the answer should present
-    // itself.
-    for _ in 0..100 {
-        patterns.shuffle(&mut thread_rng());
-
-        for design in &retries.clone() {
-            let mut reduction = String::from(*design);
-            for pattern in &patterns {
-                reduction = reduction.replace(pattern, " ");
-            }
-
-            if !reduction.contains("u") {
-                retries.remove(retries.iter().position(|pattern| pattern == design).unwrap());
-                possible_designs += 1;
-            }
-        }
-    }
-
-    Ok(possible_designs)
+    Ok(designs
+        .iter()
+        .filter(|design| is_possible_design(design, &patterns))
+        .count())
 }
 
-fn part_2(_input: String) -> Result<usize> {
-    todo!()
+fn part_2(input: String) -> Result<usize> {
+    let (patterns, designs) = parse_input(&input)?;
+
+    let mut combinations_cache: HashMap<String, usize> = HashMap::new();
+
+    Ok(designs
+        .iter()
+        .map(|design| {
+            count_possible_combinations(design.to_string(), &patterns, &mut combinations_cache)
+        })
+        .sum())
 }
 
 fn parse_input(input: &str) -> Result<(Vec<&str>, Vec<&str>)> {
@@ -104,52 +44,64 @@ fn parse_input(input: &str) -> Result<(Vec<&str>, Vec<&str>)> {
     Ok((towels, designs))
 }
 
-/// Reduce patterns to the minimal set whose elements cannot be broken down into smaller components.
-fn reduce_input_patterns<'a>(patterns: &'a [&'a str]) -> Vec<&'a str> {
-    let mut patterns = patterns
-        .iter()
-        .filter(|pattern| pattern.contains("u"))
-        .collect::<Vec<_>>();
-    patterns.sort_by_key(|p| p.len());
+fn is_possible_design(design: &str, patterns: &[&str]) -> bool {
+    let mut branches: Vec<String> = Vec::default();
 
-    // After sorting, the shortest sequences are "ug", "ru", "bu", "wu", "ur", "uw", "ub".
-    let mut unique_sequences = vec!["ug", "ru", "bu", "wu", "ur", "uw", "ub"];
-    let patterns = &patterns[unique_sequences.len()..patterns.len()];
+    for pattern in patterns {
+        let pattern = *pattern;
 
-    // By inspection, the remaining patterns have 1 to 4 'u's in them, so let's separate them first.
-    let mut patterns_by_u_count: Vec<Vec<&str>> = vec![Vec::default(); 4];
-    patterns.iter().for_each(|pattern| {
-        let index = pattern.as_bytes().iter().filter(|b| **b == b'u').count() - 1;
-
-        patterns_by_u_count[index].push(*pattern);
-    });
-
-    // Those with only 1 'u' is simple.
-    for pattern in patterns_by_u_count[0].clone() {
-        let mut reduction = pattern.to_owned();
-
-        for sequence in unique_sequences.clone() {
-            reduction = reduction.replace(sequence, "");
+        if design == pattern {
+            return true;
         }
 
-        if reduction.contains("u") {
-            unique_sequences.push(pattern);
+        if design.starts_with(pattern) {
+            branches.push(design.replacen(pattern, "", 1));
         }
     }
 
-    // For 2 'u's, the number of elements are small enough that we can manually inspect the them.
-    unique_sequences.extend_from_slice(&[
-        "wuu", "ubu", "ruu", "uug", "uuw", "uru", "uwu", "guu", "ugu", "buu", "uur", "ubgu",
-        "uubbr", "uubbww",
-    ]);
+    branches
+        .into_iter()
+        .any(|shorter_design| is_possible_design(&shorter_design, patterns))
+}
 
-    // 3 'u's.
-    unique_sequences.extend_from_slice(&["uuu", "ubuu"]);
+/// Counts all possible combinations that can be used to create a design.
+///
+/// Using owned types as it is easier to manage the lifetime of cached objects.
+fn count_possible_combinations(
+    design: String,
+    patterns: &[&str],
+    combinations_cache: &mut HashMap<String, usize>,
+) -> usize {
+    if combinations_cache.contains_key(&design) {
+        return combinations_cache[&design];
+    }
 
-    // 4 'u's.
-    unique_sequences.extend_from_slice(&["uuuu"]);
+    let mut branches: Vec<String> = Vec::default();
 
-    unique_sequences
+    // Even if we find an exact match, there can still be other combinations using shorter patterns.
+    let mut exact_pattern_found = false;
+
+    for pattern in patterns {
+        let pattern = *pattern;
+
+        if design == pattern {
+            exact_pattern_found = true;
+        }
+
+        if design.starts_with(pattern) {
+            branches.push(design.replacen(pattern, "", 1));
+        }
+    }
+
+    let total_count = exact_pattern_found as usize
+        + branches
+            .into_iter()
+            .map(|shorter_design| {
+                count_possible_combinations(shorter_design, patterns, combinations_cache)
+            })
+            .sum::<usize>();
+
+    *combinations_cache.entry(design).or_insert(total_count)
 }
 
 #[cfg(test)]
@@ -171,7 +123,7 @@ bbrgwb
 
     #[test]
     fn example_1() -> Result<()> {
-        assert_eq!(_part_1_example(EXAMPLE_INPUT.trim().to_string())?, 6);
+        assert_eq!(part_1(EXAMPLE_INPUT.trim().to_string())?, 6);
 
         Ok(())
     }
