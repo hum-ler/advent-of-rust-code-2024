@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::{anyhow, Result};
+use nalgebra::{dmatrix, dvector};
 use regex::Regex;
 
 fn main() {
@@ -93,9 +94,19 @@ impl ClawMachine {
         // Based on:
         //   ax * a_presses + bx * b_presses = px
         //   ay * a_presses + by * b_presses = py
-        // We derive the formula below:
-        let a_presses = ((px - (bx * py) / by) / (ax - (bx * ay) / by)).round();
-        let b_presses = ((px - ax * a_presses) / bx).round();
+
+        // Solve using substitution.
+        // let a_presses = ((px - (bx * py) / by) / (ax - (bx * ay) / by)).round();
+        // let b_presses = ((px - ax * a_presses) / bx).round();
+
+        // Solve using nalgebra.
+        let coefficients = dmatrix![ax, bx; ay, by];
+        let constants = dvector![px, py];
+        let (a_presses, b_presses) = coefficients
+            .lu()
+            .solve(&constants)
+            .map(|solution| (solution[0].round(), solution[1].round()))?;
+
         if a_presses.is_sign_negative() || b_presses.is_sign_negative() {
             return None;
         }
@@ -119,7 +130,10 @@ impl ClawMachine {
 }
 
 fn parse_input_into_machines(input: String) -> Result<Vec<ClawMachine>> {
-    input.split_terminator("\n\n").map(ClawMachine::from_str).collect()
+    input
+        .split_terminator("\n\n")
+        .map(ClawMachine::from_str)
+        .collect()
 }
 
 #[cfg(test)]
