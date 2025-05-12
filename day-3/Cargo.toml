@@ -1,0 +1,9 @@
+[package]
+name = "day-3"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cli.workspace = true
+regex = "1.11.1"
