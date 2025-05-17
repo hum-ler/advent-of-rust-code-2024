@@ -1,0 +1,9 @@
+[package]
+name = "day-23"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+cli.workspace = true
+itertools = "0.14.0"

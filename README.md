@@ -40,3 +40,4 @@ cargo test -p day-<DAY_NUMBER> [<PART_NUMBER>]
 | 20 | 1369 | 979012 |
 | 21 | 157892 | 197015606336332 |
 | 22 | 20071921341 | 2242 |
+| 23 | 893 | cw,dy,ef,iw,ji,jv,ka,ob,qv,ry,ua,wt,xz |
