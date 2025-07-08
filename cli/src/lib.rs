@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use anyhow::{Result, anyhow};
 use clap::Parser;
@@ -8,7 +8,7 @@ struct Args {
     part: u8,
 
     #[arg(short = 'i', long)]
-    input: Option<String>,
+    input: Option<PathBuf>,
 }
 
 pub enum Part {
@@ -20,7 +20,7 @@ pub enum Part {
 pub fn get_part(default_input: &str) -> Result<Part> {
     let args = Args::parse();
 
-    let path = args.input.unwrap_or(String::from(default_input));
+    let path = args.input.unwrap_or(default_input.into());
     let input = String::from(trim_newlines(&fs::read_to_string(path)?));
 
     match args.part {
