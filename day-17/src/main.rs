@@ -33,7 +33,7 @@ fn part_2(input: &str) -> Result<u64> {
     step_through_program_values(input)
 }
 
-#[allow(dead_code)]
+#[cfg(test)]
 fn match_program(input: &str) -> Result<u32> {
     let computer = Computer::from_str(input)?;
 
@@ -239,6 +239,7 @@ impl Computer {
         }
     }
 
+    #[cfg(test)]
     fn run_with_program_output_matching(&mut self) -> Result<()> {
         while self.ip < self.program.len() {
             self.step(true)?
