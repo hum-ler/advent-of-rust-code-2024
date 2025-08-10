@@ -210,9 +210,9 @@ impl<'a> LogicGate<'a> {
     }
 }
 
-fn parse_input_into_values_and_logic_gates(
-    input: &str,
-) -> Result<(HashMap<&str, bool>, Vec<LogicGate>)> {
+fn parse_input_into_values_and_logic_gates<'a>(
+    input: &'a str,
+) -> Result<(HashMap<&'a str, bool>, Vec<LogicGate<'a>>)> {
     let Some((values, logic_gates)) = input.split_once("\n\n") else {
         return Err(anyhow!("Cannot split into values and logic gates"));
     };
